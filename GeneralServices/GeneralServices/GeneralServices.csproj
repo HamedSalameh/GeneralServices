@@ -52,7 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BaseResult.cs" />
-    <Compile Include="Components\DomainEntityMapper.cs" />
+    <Compile Include="Components\EntityMapper.cs" />
     <Compile Include="Components\GenericRepositoryBase.cs" />
     <Compile Include="Consts.cs" />
     <Compile Include="Enums.cs" />

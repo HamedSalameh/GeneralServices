@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace GeneralServices.Components
 {
-    public static class DomainEntityMapper
+    public static class EntityMapper
     {
         private static DataTable createEmpty_EntityPropertiesTable()
         {
