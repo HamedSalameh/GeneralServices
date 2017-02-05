@@ -456,7 +456,7 @@ namespace GeneralServices.Components
             }
 
             DataTable dtDomainMapping = null;
-            Dictionary<string, int> dicDomainMapping = null;
+            Dictionary<string, int> dicDomainMapping = new Dictionary<string, int>(); ;
 
             Type[] domainModelTypes = Reflection.GetDomainTypes(domainModelAssemblyName);
 
