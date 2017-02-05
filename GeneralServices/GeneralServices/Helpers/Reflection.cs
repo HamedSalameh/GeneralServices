@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 
 namespace GeneralServices.Helpers
@@ -123,6 +124,47 @@ namespace GeneralServices.Helpers
                     return false;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Gets an array of all class types from a given assembly
+        /// </summary>
+        /// <param name="domainModelAssemblyName"></param>
+        /// <returns></returns>
+        public static Type[] GetDomainTypes(string domainModelAssemblyName)
+        {
+            Assembly DomainModelAssembly = null;
+            Type[] DomainTypes = null;
+
+            if (string.IsNullOrEmpty(domainModelAssemblyName))
+            {
+                throw new Exception(string.Format("{0} : Domain model assembly name cannot be empty.", Reflection.GetCurrentMethodName()));
+            }
+
+            try
+            {
+                DomainModelAssembly = AppDomain.CurrentDomain.GetAssemblies().SingleOrDefault(assembly => assembly.GetName().Name == domainModelAssemblyName);
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to load assembly {1} : {2}", Reflection.GetCurrentMethodName(), domainModelAssemblyName, Ex.Message), Ex);
+            }
+
+            if (DomainModelAssembly == null)
+            {
+                throw new Exception(string.Format("{0} : Unable to load assembly {1}", Reflection.GetCurrentMethodName(), domainModelAssemblyName));
+            }
+
+            try
+            {
+                DomainTypes = DomainModelAssembly.GetTypes();
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to load domain types from assembly {1} : {2}", Reflection.GetCurrentMethodName(), domainModelAssemblyName, Ex.Message), Ex);
+            }
+
+            return DomainTypes;
         }
     }
 }

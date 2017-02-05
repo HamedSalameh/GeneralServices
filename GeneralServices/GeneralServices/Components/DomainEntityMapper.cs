@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
+using System.Linq;
 
 namespace GeneralServices.Components
 {
@@ -19,34 +20,28 @@ namespace GeneralServices.Components
             return dtEntityProperties;
         }
 
-        private static void createMappingTables(string connectionString)
+        private static void createMappingTables(SqlConnection connection)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
 
-            if (string.IsNullOrEmpty(connectionString) == false)
+            if (connection != null)
             {
                 try
                 {
-                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    bool isEntityTypeLookupTableCreated = createEntityTypeLookupTable(connection);
+                    if (!isEntityTypeLookupTableCreated)
                     {
-                        connection.Open();
-
-                        bool isEntityTypeLookupTableCreated = createEntityTypeLookupTable(connection);
-                        if (!isEntityTypeLookupTableCreated)
-                        {
-                            throw new Exception(string.Format("{0} : Could not create entity type lookup table [{1}].",
-                                Reflection.GetCurrentMethodName(), Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE));
-                        }
-
-                        bool isEntityPropertyLookupTableCreated = createEntityPropertyLookupTable(connection);
-                        if (!isEntityPropertyLookupTableCreated)
-                        {
-                            throw new Exception(string.Format("{0} : Could not create entity property lookup table [{1}].",
-                                Reflection.GetCurrentMethodName(), Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE));
-                        }
-
-                        connection.Close();
+                        throw new Exception(string.Format("{0} : Could not create entity type lookup table [{1}].",
+                            Reflection.GetCurrentMethodName(), Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE));
                     }
+
+                    bool isEntityPropertyLookupTableCreated = createEntityPropertyLookupTable(connection);
+                    if (!isEntityPropertyLookupTableCreated)
+                    {
+                        throw new Exception(string.Format("{0} : Could not create entity property lookup table [{1}].",
+                            Reflection.GetCurrentMethodName(), Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE));
+                    }
+
                 }
                 catch (Exception sqlEx)
                 {
@@ -60,13 +55,13 @@ namespace GeneralServices.Components
             bool result = true;
 
             string cmdString = string.Format(
-                            "IF NOT EXISTS(select * from sys.types where name = '{0}')"+
+                            "IF NOT EXISTS(select * from sys.types where name = '{0}')" +
                             "BEGIN " +
                             "CREATE TYPE {0} AS TABLE(" +
-                            "    EntityPropertyID int NOT NULL,"+
-                            "    EntityPropertyName NVARCHAR(100) NOT NULL,"+
-                            "    EntityTypeID int NOT NULL"+
-                            ") "+
+                            "    EntityPropertyID int NOT NULL," +
+                            "    EntityPropertyName NVARCHAR(100) NOT NULL," +
+                            "    EntityTypeID int NOT NULL" +
+                            ") " +
                             "END "
                 , Consts.SQL_TYPES_UDT_DomainMapperHelper_EntityProperties);
 
@@ -245,7 +240,7 @@ namespace GeneralServices.Components
 
             if (EntityTypeLookupEntry != null)
             {
-                foreach(EntityPropertyLookup epl in EntityTypeLookupEntry.EntityProperties)
+                foreach (EntityPropertyLookup epl in EntityTypeLookupEntry.EntityProperties)
                 {
                     dtRow = dtEntityProperties.NewRow();
                     dtRow["EntityPropertyID"] = epl.EntityPropertyID;
@@ -337,27 +332,15 @@ namespace GeneralServices.Components
             return etl;
         }
 
-        public static void Initialize(string connectionString)
+        public static void Initialize(SqlConnection connection)
         {
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new Exception(string.Format("{0} : Connection string must not be empty.", Reflection.GetCurrentMethodName()));
-            }
-
             try
             {
-                createMappingTables(connectionString);
-            
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
+                createMappingTables(connection);
 
-                    createHelperUserDefinedTypes(connection);
+                createHelperUserDefinedTypes(connection);
 
-                    createHelperStoredProcedures(connection);
-
-                    connection.Close();
-                };
+                createHelperStoredProcedures(connection);
             }
             catch (Exception sqlEx)
             {
@@ -378,16 +361,20 @@ namespace GeneralServices.Components
                     {
                         connection.Open();
 
-                        rows = addEntityTypeLookupEntry(connection, EntityTypeLookupEntry, domainEntityTypeLookupTableName);
-                        if (rows == Consts.SQL_INVALID_ROW_COUNT || rows == Consts.SQL_NO_ROWS_AFFECTED)
+                        bool entityHashExists = isEntityHashExists(connection, EntityTypeLookupEntry);
+                        if (entityHashExists == false)
                         {
-                            throw new Exception(string.Format("{0} : Unable to add entry to {1}.", Reflection.GetCurrentMethodName(), domainEntityTypeLookupTableName));
-                        }
+                            rows = addEntityTypeLookupEntry(connection, EntityTypeLookupEntry, domainEntityTypeLookupTableName);
+                            if (rows == Consts.SQL_INVALID_ROW_COUNT || rows == Consts.SQL_NO_ROWS_AFFECTED)
+                            {
+                                throw new Exception(string.Format("{0} : Unable to add entry to {1}.", Reflection.GetCurrentMethodName(), domainEntityTypeLookupTableName));
+                            }
 
-                        rows = addEntityPropertiesToLookupTable(connection, EntityTypeLookupEntry);
-                        if (rows == Consts.SQL_INVALID_ROW_COUNT)
-                        {
-                            throw new Exception(string.Format("{0} : Unable to add entity properties mapping to {1}.", Reflection.GetCurrentMethodName(), domainEntityPropertyLookupTableName));
+                            rows = addEntityPropertiesToLookupTable(connection, EntityTypeLookupEntry);
+                            if (rows == Consts.SQL_INVALID_ROW_COUNT)
+                            {
+                                throw new Exception(string.Format("{0} : Unable to add entity properties mapping to {1}.", Reflection.GetCurrentMethodName(), domainEntityPropertyLookupTableName));
+                            }
                         }
 
                         connection.Close();
@@ -400,6 +387,129 @@ namespace GeneralServices.Components
             }
 
             return rows;
+        }
+
+        private static bool isEntityHashExists(SqlConnection connection, EntityTypeLookup entityType)
+        {
+            bool result = true;
+            int rows = Consts.SQL_INVALID_ROW_COUNT;
+
+            string cmdString = string.Format(
+                            "SELECT EntityTypeID " +
+                            "FROM {0} " +
+                            "WHERE EntityTypeID = {1}" +
+                            ") "
+                , Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE, entityType.EntityTypeID);
+
+            try
+            {
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = cmdString;
+
+                    rows = command.ExecuteNonQuery();
+                    result = rows > 0;
+                }
+            }
+            catch (Exception sqlCommandEx)
+            {
+                result = false;
+                throw sqlCommandEx;
+            }
+
+            return result;
+        }
+
+        public static DataTable loadDomainEntityMapping(SqlConnection connection)
+        {
+            DataTable dtEntityMapping = new DataTable();
+
+            string cmdString = string.Format("SELECT EntityTypeName, EntityTypeID FROM {0}", Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE);
+
+            try
+            {
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = cmdString;
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        dtEntityMapping.Load(reader);
+                    }
+                }
+            }
+            catch (Exception SqlEx)
+            {
+                throw SqlEx;
+            }
+
+            return dtEntityMapping;
+        }
+
+        public static void DomainMapperOrch(string connectionString, string domainModelAssemblyName)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new Exception(string.Format("{0} : Connection string must not be empty.", Reflection.GetCurrentMethodName()));
+            }
+
+            DataTable dtDomainMapping = null;
+            Dictionary<string, int> dicDomainMapping = null;
+
+            Type[] domainModelTypes = Reflection.GetDomainTypes(domainModelAssemblyName);
+
+            if (domainModelTypes != null && domainModelTypes.Length > 0)
+            {
+                try
+                {
+                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    {
+                        connection.Open();
+
+                        // Load existing domain mapping, if any
+                        dtDomainMapping = loadDomainEntityMapping(connection);
+                        if (dtDomainMapping == null || (dtDomainMapping.Rows != null && dtDomainMapping.Rows.Count == 0))
+                        {
+                            // Mapping does not exist or empty
+                            // create new mapping
+                            Initialize(connection);
+                        }
+                        else
+                        {
+                            // convert into dictionary
+                            dicDomainMapping = dtDomainMapping.AsEnumerable().ToDictionary(dr => dr.Field<string>("EntityTypeName"), dr => dr.Field<int>("EntityTypeID"));
+                        }
+
+                        if (dicDomainMapping != null)
+                        {
+                            int existingHash = 0;
+                            foreach (Type domainModelType in domainModelTypes)
+                            {
+                                // Build type lookup (hash)
+                                EntityTypeLookup entityMap = CreateEntityMap(domainModelType);
+                                // Compare the existing hash with the new one
+                                dicDomainMapping.TryGetValue(entityMap.EntityTypeName, out existingHash);
+                                if (existingHash == 0 || existingHash != entityMap.EntityTypeID)
+                                {
+                                    // change is detected, remap the entity into DB
+                                }
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("Unable to build domain mapping dicionary");
+                        }
+
+                        connection.Close();
+                    }
+                }
+                catch (Exception Ex)
+                {
+                    throw Ex;
+                }
+            }
         }
     }
 }
