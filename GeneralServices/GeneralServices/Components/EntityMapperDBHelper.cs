@@ -1,4 +1,5 @@
 ﻿using GeneralServices.Helpers;
+using GeneralServices.Models;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -8,6 +9,15 @@ namespace GeneralServices.Components
 {
     public static class EntityMapperDBHelper
     {
+        private static DataTable createEmpty_EntityPropertiesTable()
+        {
+            DataTable dtEntityProperties = new DataTable();
+            dtEntityProperties.Columns.Add("EntityPropertyID", typeof(int));
+            dtEntityProperties.Columns.Add("EntityPropertyName", typeof(string));
+            dtEntityProperties.Columns.Add("EntityTypeID", typeof(int));
+            return dtEntityProperties;
+        }
+
         private static bool createEntityTypeLookupTable(SqlConnection connection)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
@@ -101,6 +111,119 @@ namespace GeneralServices.Components
             return rows;
         }
 
+        private static int addEntityTypeLookupEntry(SqlConnection connection, EntityTypeLookup EntityTypeLookupEntry)
+        {
+            int rows = Consts.SQL_INVALID_ROW_COUNT;
+            string cmdString = string.Format("INSERT INTO {0} (EntityTypeID,EntityTypeName) VALUES (@etid, @etn)", Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE);
+
+            try
+            {
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = cmdString;
+                    command.Parameters.AddWithValue("@etid", EntityTypeLookupEntry.EntityTypeID);
+                    command.Parameters.AddWithValue("@etn", EntityTypeLookupEntry.EntityTypeName);
+
+                    rows = command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception sqlCommandEx)
+            {
+                throw sqlCommandEx;
+            }
+
+            return rows;
+        }
+
+        private static int addEntityPropertiesToLookupTable(SqlConnection connection, EntityTypeLookup EntityTypeLookupEntry)
+        {
+            int rows = Consts.SQL_INVALID_ROW_COUNT;
+            DataTable dtEntityProperties = createEmpty_EntityPropertiesTable();
+            DataRow dtRow;
+
+            if (EntityTypeLookupEntry != null)
+            {
+                foreach (EntityPropertyLookup epl in EntityTypeLookupEntry.EntityProperties)
+                {
+                    dtRow = dtEntityProperties.NewRow();
+                    dtRow["EntityPropertyID"] = epl.EntityPropertyID;
+                    dtRow["EntityPropertyName"] = epl.EntityPropertyName;
+                    dtRow["EntityTypeID"] = EntityTypeLookupEntry.EntityTypeID;
+                    dtEntityProperties.Rows.Add(dtRow);
+                }
+            }
+
+            try
+            {
+                using (SqlCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.CommandText = Consts.SQL_PROCEDURES_USP_DomainMapperHelper_InsertIntoEntityPropertyLookupTable;
+
+                    SqlParameter entitiesParam = command.Parameters.AddWithValue("@dtEntityProperties", dtEntityProperties);
+                    entitiesParam.SqlDbType = SqlDbType.Structured;
+
+                    rows = command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception sqlCommandEx)
+            {
+                throw sqlCommandEx;
+            }
+
+            return rows;
+        }
+
+        internal static bool SaveEntityMapping(string connectionString, EntityTypeLookup EntityEntry)
+        {
+            bool actionResult = false;
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    // Wrap insert actions with transactions
+                    actionResult = Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Begin);
+
+                    if (actionResult)
+                    {
+                        try
+                        {
+                            int rows = addEntityTypeLookupEntry(connection, EntityEntry);
+                            if (rows == Consts.SQL_INVALID_ROW_COUNT || rows == Consts.SQL_NO_ROWS_AFFECTED)
+                            {
+                                throw new Exception(string.Format("{0} : Unable to add entry to {1}.", Reflection.GetCurrentMethodName(), 
+                                        Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE));
+                            }
+
+                            rows = addEntityPropertiesToLookupTable(connection, EntityEntry);
+                            if (rows == Consts.SQL_INVALID_ROW_COUNT)
+                            {
+                                throw new Exception(string.Format("{0} : Unable to add entity properties mapping to {1}.", Reflection.GetCurrentMethodName(), 
+                                        Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE));
+                            }
+                        }
+                        catch (Exception internalEx)
+                        {
+                            Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Rollback);
+                            throw internalEx;
+                        }
+
+                        actionResult = Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Commit);
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Save mapping orchestration method failed.\r\n{1}", Reflection.GetCallingMethodName(), Ex.Message));
+            }
+            return actionResult;
+        }
 
         internal static void createMappingTables(SqlConnection connection)
         {
@@ -246,10 +369,22 @@ namespace GeneralServices.Components
             return dtEntityMapping;
         }
 
+        /// <summary>
+        /// Runs a transaction command based on the parameters (BEGIN, COMMIT and ROLLBACK)
+        /// </summary>
+        /// <param name="connection">Active SqlCommation that the transaction command will be applied upn</param>
+        /// <param name="TransactionName">Name of the transaction</param>
+        /// <param name="Command">Predefined SQL Server transaction command lookup</param>
+        /// <returns>True if begin transaction succeeded</returns>
         private static bool Transaction(SqlConnection connection, string TransactionName, SQL_TransactionCommands Command)
         {
             bool actionResult = false;
             int rows = Consts.SQL_INVALID_ROW_COUNT;
+
+            if (string.IsNullOrEmpty(TransactionName))
+            {
+                throw new Exception("{0} : Transaction name cannot be empty");
+            }
 
             using (SqlCommand command = new SqlCommand())
             {
@@ -317,9 +452,9 @@ namespace GeneralServices.Components
                                 Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
                                 throw internalEx;
                             }
+                            Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Commit);
                         }
-                        Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Commit);
-
+                        
                         connection.Close();
                     }
                 }
@@ -331,7 +466,7 @@ namespace GeneralServices.Components
                 }
             }
 
-            return actionResult;
+            return actionResult || rows != Consts.SQL_INVALID_ROW_COUNT;
         }
     }
 }

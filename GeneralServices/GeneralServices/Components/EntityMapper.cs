@@ -94,7 +94,6 @@ namespace GeneralServices.Components
 
             return dtEntityMapping;
         }
-
         private static int addEntityTypeLookupEntry(SqlConnection connection, EntityTypeLookup EntityTypeLookupEntry, string domainEntityTypeLookupTableName)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
@@ -119,7 +118,6 @@ namespace GeneralServices.Components
 
             return rows;
         }
-
         private static int addEntityPropertiesToLookupTable(SqlConnection connection, EntityTypeLookup EntityTypeLookupEntry)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
@@ -159,7 +157,6 @@ namespace GeneralServices.Components
 
             return rows;
         }
-
         private static int addEntityProertyLookupEntry(SqlConnection connection, EntityPropertyLookup EntityPropertyLookupEntry, int EntityTypeLookupID, string domainEntityPropertyLookupTableName)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
@@ -185,7 +182,6 @@ namespace GeneralServices.Components
 
             return rows;
         }
-
         public static int SaveDomainMappingToDatabase(string connectionString, EntityTypeLookup EntityTypeLookupEntry, string domainEntityTypeLookupTableName, string domainEntityPropertyLookupTableName)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
@@ -225,7 +221,6 @@ namespace GeneralServices.Components
 
             return rows;
         }
-
         private static bool isEntityHashExists(SqlConnection connection, EntityTypeLookup entityType)
         {
             bool result = true;
@@ -257,7 +252,6 @@ namespace GeneralServices.Components
 
             return result;
         }
-
         public static void DomainMapperOrch(string connectionString, string domainModelAssemblyName)
         {
             if (string.IsNullOrEmpty(connectionString))
@@ -342,15 +336,6 @@ namespace GeneralServices.Components
             }
 
             return dicDomainMapping;
-        }
-
-        private static DataTable createEmpty_EntityPropertiesTable()
-        {
-            DataTable dtEntityProperties = new DataTable();
-            dtEntityProperties.Columns.Add("EntityPropertyID", typeof(int));
-            dtEntityProperties.Columns.Add("EntityPropertyName", typeof(string));
-            dtEntityProperties.Columns.Add("EntityTypeID", typeof(int));
-            return dtEntityProperties;
         }
 
         private static EntityTypeLookup CreateEntityMap(Type EntityType)
@@ -447,6 +432,11 @@ namespace GeneralServices.Components
                                 bool actionResult = false;
                                 // change is detected, remap the entity into DB
                                 actionResult = EntityMapperDBHelper.RemoveEntityMapping(entityMap.EntityTypeID, connectionString);
+                                // in case we succeed in removing old mapping, continue and create a new one
+                                if (actionResult)
+                                {
+                                    actionResult = EntityMapperDBHelper.SaveEntityMapping(connectionString, entityMap);
+                                }
                             }
                         }
                     }
