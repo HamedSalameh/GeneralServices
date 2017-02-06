@@ -372,7 +372,7 @@ namespace GeneralServices.Components
             return etl;
         }
 
-        public static void Initialize(string connectionString)
+        private static void Initialize(string connectionString)
         {
             try
             {
@@ -396,6 +396,11 @@ namespace GeneralServices.Components
 
         }
 
+        /// <summary>
+        /// Scans an assembly for any class types, then generates a mapping in a given database for all the assembly classes
+        /// </summary>
+        /// <param name="connectionString">A string representing the connection string to a SQL based database</param>
+        /// <param name="domainModelAssemblyName">The name of the assembly containing the classes to map</param>
         public static void CreateEntityMapping(string connectionString, string domainModelAssemblyName)
         {
             if (string.IsNullOrEmpty(connectionString))
