@@ -12,10 +12,8 @@ namespace GeneralServices.Services
         public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, EntityTypeLookup EntityTypeID, string EntityDisplayText, int ActionUserID, CRUDType CRUDType)
         {
             HistoryLog entityHistoryEntry = new HistoryLog();
-            entityHistoryEntry.ActionUserID = ActionUserID;
             entityHistoryEntry.CRUDType = CRUDType;
             entityHistoryEntry.Date = DateTime.Now;
-            entityHistoryEntry.EntityDisplayText = EntityDisplayText;
             entityHistoryEntry.EntityID = EntityID;
             entityHistoryEntry.EntityOwnerID = EntityOwnerID.Value;
             entityHistoryEntry.EntityTypeID = EntityTypeID;
