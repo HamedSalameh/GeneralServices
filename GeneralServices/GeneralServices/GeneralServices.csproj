@@ -53,7 +53,9 @@
   <ItemGroup>
     <Compile Include="BaseResult.cs" />
     <Compile Include="Components\EntityMapper.cs" />
+    <Compile Include="Components\EntityMapperDBHelper.cs" />
     <Compile Include="Components\GenericRepositoryBase.cs" />
+    <Compile Include="Components\xEntityMapper.cs" />
     <Compile Include="Consts.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="Helpers\General.cs" />
@@ -80,7 +82,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>XCOPY $(TargetPath) C:\Users\Hamed\Source\Repos\Shared /E /Y /C
+    <PostBuildEvent>XCOPY $(TargetPath) C:\Users\hamed\source\Shared /E /Y /C
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
