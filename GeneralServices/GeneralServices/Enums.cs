@@ -47,7 +47,7 @@
 
         public enum SQL_TransactionCommands
         {
-            Begin = 1,
+            Begin = 0,
             Commit,
             Rollback
         }

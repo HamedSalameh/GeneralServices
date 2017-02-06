@@ -436,7 +436,7 @@ namespace GeneralServices.Components
                             {
                                 bool actionResult = false;
                                 // change is detected, remap the entity into DB
-                                actionResult = EntityMapperDBHelper.RemoveEntityMapping(entityMap.EntityTypeID, connectionString);
+                                actionResult = EntityMapperDBHelper.RemoveEntityMapping(existingHash, connectionString);
                                 // in case we succeed in removing old mapping, continue and create a new one
                                 if (actionResult)
                                 {

@@ -7,7 +7,7 @@ using static GeneralServices.Enums;
 
 namespace GeneralServices.Components
 {
-    public static class EntityMapperDBHelper
+    internal static class EntityMapperDBHelper
     {
         private static DataTable createEmpty_EntityPropertiesTable()
         {
@@ -98,7 +98,7 @@ namespace GeneralServices.Components
         private static int deleteFromTableByEntityTypeID(string Table, int ID, SqlConnection connection)
         {
             int rows = Consts.SQL_INVALID_ROW_COUNT;
-            string cmdString = string.Format("DELTE FROM {0} WHERE EntityTypeID = {1}; SELECT @@ROWCOUNT", Table, ID);
+            string cmdString = string.Format("DELETE FROM {0} WHERE EntityTypeID = {1}; SELECT @@ROWCOUNT", Table, ID);
 
             using (SqlCommand command = new SqlCommand())
             {
@@ -395,10 +395,10 @@ namespace GeneralServices.Components
                 command.ExecuteNonQuery();
 
                 // Check transaction state
-                cmdString = string.Format("SELECT * FROM sys.dm_tran_active_transactions WHERE name = '{0}'", TransactionName);
+                cmdString = string.Format("SELECT COUNT(*) FROM sys.dm_tran_active_transactions WHERE name = '{0}'", TransactionName);
                 command.CommandText = cmdString;
 
-                rows = command.ExecuteNonQuery();
+                rows = (int)command.ExecuteScalar();
                 if (Command == SQL_TransactionCommands.Begin)
                 {
                     if (rows > Consts.SQL_NO_ROWS_AFFECTED)
