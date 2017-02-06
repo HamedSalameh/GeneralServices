@@ -339,7 +339,8 @@ namespace GeneralServices.Components
         {
             DataTable dtEntityMapping = new DataTable();
 
-            string cmdString = string.Format("SELECT EntityTypeName, EntityTypeID FROM {0}", Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE);
+            string cmdString = string.Format("IF EXISTS (SELECT * FROM SYS.tables WHERE object_id = object_id('EntityTypeLookup')) "+ 
+                "SELECT EntityTypeName, EntityTypeID FROM {0}", Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE);
 
             try
             {

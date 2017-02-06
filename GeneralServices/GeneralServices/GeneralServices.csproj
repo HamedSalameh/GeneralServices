@@ -55,7 +55,6 @@
     <Compile Include="Components\EntityMapper.cs" />
     <Compile Include="Components\EntityMapperDBHelper.cs" />
     <Compile Include="Components\GenericRepositoryBase.cs" />
-    <Compile Include="Components\xEntityMapper.cs" />
     <Compile Include="Consts.cs" />
     <Compile Include="Enums.cs" />
     <Compile Include="Helpers\General.cs" />
