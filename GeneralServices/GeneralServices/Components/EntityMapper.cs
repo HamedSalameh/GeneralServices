@@ -444,7 +444,9 @@ namespace GeneralServices.Components
                             dicDomainMapping.TryGetValue(entityMap.EntityTypeName, out existingHash);
                             if (existingHash == 0 || existingHash != entityMap.EntityTypeID)
                             {
+                                bool actionResult = false;
                                 // change is detected, remap the entity into DB
+                                actionResult = EntityMapperDBHelper.RemoveEntityMapping(entityMap.EntityTypeID, connectionString);
                             }
                         }
                     }

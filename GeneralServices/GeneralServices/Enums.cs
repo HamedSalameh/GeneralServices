@@ -44,5 +44,12 @@
             Update,
             Delete
         }
+
+        public enum SQL_TransactionCommands
+        {
+            Begin = 1,
+            Commit,
+            Rollback
+        }
     }
 }

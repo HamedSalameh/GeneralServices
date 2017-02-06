@@ -2,6 +2,7 @@
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using static GeneralServices.Enums;
 
 namespace GeneralServices.Components
 {
@@ -84,6 +85,21 @@ namespace GeneralServices.Components
             return result;
         }
 
+        private static int deleteFromTableByEntityTypeID(string Table, int ID, SqlConnection connection)
+        {
+            int rows = Consts.SQL_INVALID_ROW_COUNT;
+            string cmdString = string.Format("DELTE FROM {0} WHERE EntityTypeID = {1}; SELECT @@ROWCOUNT", Table, ID);
+
+            using (SqlCommand command = new SqlCommand())
+            {
+                command.Connection = connection;
+                command.CommandText = cmdString;
+
+                rows = command.ExecuteNonQuery();
+            }
+
+            return rows;
+        }
 
 
         internal static void createMappingTables(SqlConnection connection)
@@ -228,6 +244,94 @@ namespace GeneralServices.Components
             }
 
             return dtEntityMapping;
+        }
+
+        private static bool Transaction(SqlConnection connection, string TransactionName, SQL_TransactionCommands Command)
+        {
+            bool actionResult = false;
+            int rows = Consts.SQL_INVALID_ROW_COUNT;
+
+            using (SqlCommand command = new SqlCommand())
+            {
+                string cmdString = string.Format("{0} TRANSACTION {1}", Consts.SQL_TRAN_COMMANDS[(int)Command], TransactionName);
+                command.Connection = connection;
+                command.CommandText = cmdString;
+
+                command.ExecuteNonQuery();
+
+                // Check transaction state
+                cmdString = string.Format("SELECT * FROM sys.dm_tran_active_transactions WHERE name = '{0}'", TransactionName);
+                command.CommandText = cmdString;
+
+                rows = command.ExecuteNonQuery();
+                if (Command == SQL_TransactionCommands.Begin)
+                {
+                    if (rows > Consts.SQL_NO_ROWS_AFFECTED)
+                    {
+                        actionResult = true;
+                    }
+                }
+                else
+                {
+                    actionResult = true;
+                }
+
+            }
+
+            return actionResult;
+        }
+
+        internal static bool RemoveEntityMapping(int entityTypeID, string connectionString)
+        {
+            bool actionResult = false;
+            int rows = Consts.SQL_INVALID_ROW_COUNT;
+
+            if (entityTypeID != 0)
+            {
+                try
+                {
+                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    {
+                        connection.Open();
+
+                        actionResult = Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Begin);
+                        // If we succeeded to open transaction, then begin deletion
+                        if (actionResult)
+                        {
+                            try
+                            {
+                                rows = deleteFromTableByEntityTypeID(Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE, entityTypeID, connection);
+                                if (rows != Consts.SQL_INVALID_ROW_COUNT)
+                                {
+                                    rows = deleteFromTableByEntityTypeID(Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE, entityTypeID, connection);
+                                }
+                                else
+                                {
+                                    Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
+                                    throw new Exception(string.Format("{0} : Unable to delete entity mapping. rows = -1"));
+                                }
+
+                            }
+                            catch (Exception internalEx)
+                            {
+                                Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
+                                throw internalEx;
+                            }
+                        }
+                        Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Commit);
+
+                        connection.Close();
+                    }
+                }
+                catch (Exception Ex)
+                {
+                    actionResult = false;
+                    throw new Exception(string.Format("{0} : Unable to remove existing entity mapping for EntityTypeID {1} : {2}",
+                        Reflection.GetCurrentMethodName(), entityTypeID, Ex.Message));
+                }
+            }
+
+            return actionResult;
         }
     }
 }
