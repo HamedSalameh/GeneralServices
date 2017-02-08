@@ -186,7 +186,7 @@ namespace GeneralServices.Components
                     connection.Open();
 
                     // Wrap insert actions with transactions
-                    actionResult = Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Begin);
+                    actionResult = DBHelper.Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Begin);
 
                     if (actionResult)
                     {
@@ -208,11 +208,11 @@ namespace GeneralServices.Components
                         }
                         catch (Exception internalEx)
                         {
-                            Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Rollback);
+                            DBHelper.Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Rollback);
                             throw internalEx;
                         }
 
-                        actionResult = Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Commit);
+                        actionResult = DBHelper.Transaction(connection, "__INSERT_NEW_MAPPING", SQL_TransactionCommands.Commit);
                     }
 
                     connection.Close();
@@ -369,54 +369,7 @@ namespace GeneralServices.Components
 
             return dtEntityMapping;
         }
-
-        /// <summary>
-        /// Runs a transaction command based on the parameters (BEGIN, COMMIT and ROLLBACK)
-        /// </summary>
-        /// <param name="connection">Active SqlCommation that the transaction command will be applied upn</param>
-        /// <param name="TransactionName">Name of the transaction</param>
-        /// <param name="Command">Predefined SQL Server transaction command lookup</param>
-        /// <returns>True if begin transaction succeeded</returns>
-        private static bool Transaction(SqlConnection connection, string TransactionName, SQL_TransactionCommands Command)
-        {
-            bool actionResult = false;
-            int rows = Consts.SQL_INVALID_ROW_COUNT;
-
-            if (string.IsNullOrEmpty(TransactionName))
-            {
-                throw new Exception("{0} : Transaction name cannot be empty");
-            }
-
-            using (SqlCommand command = new SqlCommand())
-            {
-                string cmdString = string.Format("{0} TRANSACTION {1}", Consts.SQL_TRAN_COMMANDS[(int)Command], TransactionName);
-                command.Connection = connection;
-                command.CommandText = cmdString;
-
-                command.ExecuteNonQuery();
-
-                // Check transaction state
-                cmdString = string.Format("SELECT COUNT(*) FROM sys.dm_tran_active_transactions WHERE name = '{0}'", TransactionName);
-                command.CommandText = cmdString;
-
-                rows = (int)command.ExecuteScalar();
-                if (Command == SQL_TransactionCommands.Begin)
-                {
-                    if (rows > Consts.SQL_NO_ROWS_AFFECTED)
-                    {
-                        actionResult = true;
-                    }
-                }
-                else
-                {
-                    actionResult = true;
-                }
-
-            }
-
-            return actionResult;
-        }
-
+        
         internal static bool RemoveEntityMapping(int entityTypeID, string connectionString)
         {
             bool actionResult = false;
@@ -430,7 +383,7 @@ namespace GeneralServices.Components
                     {
                         connection.Open();
 
-                        actionResult = Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Begin);
+                        actionResult = DBHelper.Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Begin);
                         // If we succeeded to open transaction, then begin deletion
                         if (actionResult)
                         {
@@ -443,17 +396,17 @@ namespace GeneralServices.Components
                                 }
                                 else
                                 {
-                                    Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
+                                    DBHelper.Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
                                     throw new Exception(string.Format("{0} : Unable to delete entity mapping. rows = -1"));
                                 }
 
                             }
                             catch (Exception internalEx)
                             {
-                                Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
+                                DBHelper.Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Rollback);
                                 throw internalEx;
                             }
-                            Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Commit);
+                            DBHelper.Transaction(connection, "__DELETE_FROM_ETL", SQL_TransactionCommands.Commit);
                         }
                         
                         connection.Close();

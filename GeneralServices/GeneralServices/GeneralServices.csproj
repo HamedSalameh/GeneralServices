@@ -57,6 +57,7 @@
     <Compile Include="Components\GenericRepositoryBase.cs" />
     <Compile Include="Consts.cs" />
     <Compile Include="Enums.cs" />
+    <Compile Include="Helpers\DBHelper.cs" />
     <Compile Include="Helpers\General.cs" />
     <Compile Include="Helpers\Reflection.cs" />
     <Compile Include="Helpers\ResourceHelper.cs" />
@@ -68,6 +69,7 @@
     <Compile Include="Models\HistoryLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\HistoryService.cs" />
+    <Compile Include="Services\HistoryServiceDBHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\tsql_CreateTable_EntityPropertyLookup.sql" />

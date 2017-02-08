@@ -10,13 +10,13 @@ namespace GeneralServices.Models
         public virtual int HistoryLogID { get; set; }
 
         /// <summary>
-        /// The type of the domain model entity that we want to log event for
+        /// The type of the domain model entity that is connected to this event entry
         /// </summary>
         [Required]
         public virtual EntityTypeLookup EntityTypeID { get; set; }
 
         /// <summary>
-        /// ID of the domain model entity that we need to log a history event for
+        /// ID of the domain model entity that is connected to this event entry
         /// </summary>
         [Required]
         public virtual int EntityID { get; set; }
@@ -28,5 +28,12 @@ namespace GeneralServices.Models
 
         [Required]
         public virtual CRUDType CRUDType { get; set; }
+
+        public virtual int HashID { get; set; }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
     }
 }

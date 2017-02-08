@@ -9,6 +9,26 @@ namespace GeneralServices.Services
 {
     public class HistoryService : IHistoryService
     {
+        private static HistoryService _instance;
+        private static string _connectionString;
+
+        private HistoryService()
+        {
+            // do all initalizations in the CTOR
+        }
+
+        public static HistoryService Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new HistoryService();
+                }
+                return _instance;
+            }
+        }
+
         public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, EntityTypeLookup EntityTypeID, string EntityDisplayText, int ActionUserID, CRUDType CRUDType)
         {
             HistoryLog entityHistoryEntry = new HistoryLog();
@@ -17,6 +37,10 @@ namespace GeneralServices.Services
             entityHistoryEntry.EntityID = EntityID;
             entityHistoryEntry.EntityOwnerID = EntityOwnerID.Value;
             entityHistoryEntry.EntityTypeID = EntityTypeID;
+
+            entityHistoryEntry.HashID = entityHistoryEntry.GetHashCode();
+
+            HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry);
         }
 
         public void CreateHistoryPropertyChangeEntry(IEntity Entity)
