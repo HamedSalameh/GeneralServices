@@ -15,6 +15,7 @@
         public static readonly string SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE = "EntityTypeLookup";
         public static readonly string SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE = "EntityPropertyLookup";
         public static readonly string SQL_TABLES_HISTORY_HISTORYLOG = "HistoryLog";
+        public static readonly string SQL_TABLES_HISTORY_ENTITYPROPERTYCHANGES = "EntityPropertyChanges";
 
         public static readonly string OPERATION_RESULT = "OperationResult";
     }

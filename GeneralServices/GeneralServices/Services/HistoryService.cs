@@ -70,6 +70,12 @@ namespace GeneralServices.Services
             {
                 HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
                 result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
+                // if main history table exists, check the entity property changes table
+                if (result)
+                {
+                    HistoryServiceDBHelper.createEntityPropertyChangesTable(ConnectionString);
+                    result = HistoryServiceDBHelper.validateEntityPropertyChangesTable(ConnectionString);
+                }
                 // Init history logs tables, stored procedures and user defined types
                 if (result)
                 {

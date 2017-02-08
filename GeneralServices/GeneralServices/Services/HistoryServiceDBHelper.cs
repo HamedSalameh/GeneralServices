@@ -94,6 +94,97 @@ namespace GeneralServices.Services
             return result;
         }
 
+        internal static void createEntityPropertyChangesTable(string ConnectionString)
+        {
+            if (string.IsNullOrEmpty(ConnectionString))
+            {
+                throw new Exception(string.Format("{0} : Connection string value cannot be empty.", Reflection.GetCurrentMethodName()));
+            }
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    connection.Open();
+
+                    string commandString = string.Format(
+                        "IF NOT EXISTS(SELECT * FROM sys.tables WHERE object_id = object_id('{0}')) " +
+                        "   BEGIN " +
+                        "       CREATE TABLE {0} " +
+                        "           (" +
+                        "           EntityPropertyChangeID INT PRIMARY KEY IDENTITY," +
+                        "           HistoryLogID INT NOT NULL," +
+                        "           EntityPropertyID INT NOT NULL," +
+                        "           CurrentValueAsText INT NOT NULL," +
+                        "           OriginalValueAsText INT," +
+                        "           Date DATETIME NOT NULL," +
+                        "           HashID INT, " +
+
+                        "           CONSTRAINT FK_HistoryLogID FOREIGN KEY (HistoryLogID) REFERENCES {1}(HistoryLogID), " +
+                        "           ) " +
+                        "END "
+                        , Consts.SQL_TABLES_HISTORY_ENTITYPROPERTYCHANGES
+                        , Consts.SQL_TABLES_HISTORY_HISTORYLOG
+                        , Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE);
+
+                    DBHelper.executeSqlScript(connection, commandString);
+
+                    connection.Close();
+                }
+            }
+            catch (System.Exception Ex)
+            {
+                throw Ex;
+            }
+        }
+
+        internal static bool validateEntityPropertyChangesTable(string ConnectionString)
+        {
+            bool result = false;
+
+            if (string.IsNullOrEmpty(ConnectionString))
+            {
+                throw new Exception(string.Format("{0} : Connection string value cannot be empty.", Reflection.GetCurrentMethodName()));
+            }
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    connection.Open();
+
+                    string commandString = string.Format("SELECT COUNT(*) FROM sys.tables WHERE object_id = object_id('{0}') "
+                        , Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE);
+
+                    try
+                    {
+                        using (SqlCommand command = new SqlCommand())
+                        {
+                            command.Connection = connection;
+                            command.CommandText = commandString;
+
+                            int rows = (int)command.ExecuteScalar();
+                            result = rows > Consts.SQL_INVALID_ROW_COUNT;
+                        }
+                    }
+                    catch (Exception sqlCommandEx)
+                    {
+                        result = false;
+                        throw sqlCommandEx;
+                    }
+
+
+                    connection.Close();
+                }
+            }
+            catch (System.Exception Ex)
+            {
+                throw Ex;
+            }
+
+            return result;
+        }
+
         public static bool AddEntityHistoryEntry(HistoryLog EntityEntry, string ConnectionString)
         {
             bool result = false;
