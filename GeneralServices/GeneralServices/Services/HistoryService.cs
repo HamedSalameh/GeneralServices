@@ -1,4 +1,5 @@
-﻿using GeneralServices.Interfaces;
+﻿using GeneralServices.Helpers;
+using GeneralServices.Interfaces;
 using GeneralServices.Models;
 using System;
 using System.Collections;
@@ -14,7 +15,8 @@ namespace GeneralServices.Services
 
         private HistoryService()
         {
-            // do all initalizations in the CTOR
+            // do all initalizations here
+            _connectionString = string.Empty;
         }
 
         public static HistoryService Instance
@@ -27,6 +29,15 @@ namespace GeneralServices.Services
                 }
                 return _instance;
             }
+        }
+
+        public void SetConnectionString(string ConnectionString)
+        {
+            if (string.IsNullOrEmpty(ConnectionString))
+            {
+                throw new Exception(string.Format("{0} : ConnectionString value cannot be null or empty", Reflection.GetCurrentMethodName()));
+            }
+            _connectionString = ConnectionString;
         }
 
         public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, EntityTypeLookup EntityTypeID, string EntityDisplayText, int ActionUserID, CRUDType CRUDType)
