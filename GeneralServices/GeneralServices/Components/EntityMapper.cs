@@ -9,9 +9,62 @@ using System.Linq;
 
 namespace GeneralServices.Components
 {
-    public static class EntityMapper
+    public class EntityMapper
     {
-        private static Dictionary<string, int> InitializeEntityMapping(string connectionString)
+        #region Private Properties
+        private static EntityMapper _instance;
+        private static string _connectionString;
+        private static bool _EntityMapperInitialized;
+        #endregion
+
+        #region Public Properties
+        public string ConnectionString
+        {
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    throw new Exception(string.Format("{0} : ConnectionString value cannot be null or empty", Reflection.GetCurrentMethodName()));
+                }
+                _connectionString = value;
+            }
+            get
+            {
+                return _connectionString;
+            }
+        }
+
+        public bool IsEntityMapperInitialized
+        {
+            get
+            {
+                return _EntityMapperInitialized;
+            }
+        }
+        #endregion
+
+        #region Singleton
+        private EntityMapper()
+        {
+            // do all initalizations here
+            _connectionString = string.Empty;
+            _EntityMapperInitialized = false;
+        }
+
+        public static EntityMapper Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = new EntityMapper();
+                }
+                return _instance;
+            }
+        } 
+        #endregion
+
+        private Dictionary<string, int> InitializeEntityMapping(string connectionString)
         {
             Dictionary<string, int> dicDomainMapping = new Dictionary<string, int>();
             DataTable dtDomainMapping = EntityMapperDBHelper.loadDomainEntityMapping(connectionString);
@@ -30,7 +83,7 @@ namespace GeneralServices.Components
             return dicDomainMapping;
         }
 
-        private static EntityTypeLookup CreateEntityMap(Type EntityType)
+        private EntityTypeLookup CreateEntityMap(Type EntityType)
         {
             EntityTypeLookup etl = null;
 
@@ -64,7 +117,7 @@ namespace GeneralServices.Components
             return etl;
         }
 
-        private static void Initialize(string connectionString)
+        private void Initialize(string connectionString)
         {
             try
             {
@@ -93,9 +146,9 @@ namespace GeneralServices.Components
         /// </summary>
         /// <param name="connectionString">A string representing the connection string to a SQL based database</param>
         /// <param name="domainModelAssemblyName">The name of the assembly containing the classes to map</param>
-        public static void CreateEntityMapping(string connectionString, string domainModelAssemblyName)
+        public void CreateEntityMapping(string domainModelAssemblyName)
         {
-            if (string.IsNullOrEmpty(connectionString))
+            if (string.IsNullOrEmpty(_connectionString))
             {
                 throw new Exception(string.Format("{0} : Connection string must not be empty.", Reflection.GetCurrentMethodName()));
             }
@@ -114,7 +167,7 @@ namespace GeneralServices.Components
                 try
                 {
                     // Load existing domain mapping, if any, otherwise create a new one
-                    dicDomainMapping = InitializeEntityMapping(connectionString);
+                    dicDomainMapping = InitializeEntityMapping(_connectionString);
                     if (dicDomainMapping != null)
                     {
                         int existingHash = 0;
@@ -131,12 +184,12 @@ namespace GeneralServices.Components
                                 if (existingHash != 0)
                                 {
                                     // Existing entity - remove the old mapping
-                                    actionResult = EntityMapperDBHelper.RemoveEntityMapping(existingHash, connectionString);
+                                    actionResult = EntityMapperDBHelper.RemoveEntityMapping(existingHash, _connectionString);
                                 }
                                 // in case we succeed in removing old mapping, continue and create a new one
                                 if (actionResult || existingHash == 0)
                                 {
-                                    actionResult = EntityMapperDBHelper.SaveEntityMapping(connectionString, entityMap);
+                                    actionResult = EntityMapperDBHelper.SaveEntityMapping(_connectionString, entityMap);
                                 }
                             }
                         }
@@ -152,6 +205,22 @@ namespace GeneralServices.Components
                     throw Ex;
                 }
             }
+        }
+
+        public int GetEntityTypeLookupID(Type EntityType)
+        {
+            int entityID = 0;
+
+            try
+            {
+                entityID =EntityMapperDBHelper.GetEntityTypeLookupID(EntityType, ConnectionString);
+            }
+            catch (Exception Ex)
+            {
+                throw Ex;
+            }
+
+            return entityID;
         }
     }
 }

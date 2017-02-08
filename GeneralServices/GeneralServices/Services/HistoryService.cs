@@ -10,13 +10,43 @@ namespace GeneralServices.Services
 {
     public class HistoryService : IHistoryService
     {
+        #region Private properties
         private static HistoryService _instance;
         private static string _connectionString;
+        private static bool _historyLogTablesInitialized;
+        #endregion
 
+        #region Public Properties
+        public string ConnectionString
+        {
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                {
+                    throw new Exception(string.Format("{0} : ConnectionString value cannot be null or empty", Reflection.GetCurrentMethodName()));
+                }
+                _connectionString = value;
+            }
+            get
+            {
+                return _connectionString;
+            }
+        }
+        public bool IsHistoryLogTablesInitiazlied
+        {
+            get
+            {
+                return _historyLogTablesInitialized;
+            }
+        } 
+        #endregion
+
+        #region Singleton contructor
         private HistoryService()
         {
             // do all initalizations here
             _connectionString = string.Empty;
+            _historyLogTablesInitialized = false;
         }
 
         public static HistoryService Instance
@@ -30,28 +60,55 @@ namespace GeneralServices.Services
                 return _instance;
             }
         }
+        #endregion
 
-        public void SetConnectionString(string ConnectionString)
+        public bool Initialize()
         {
-            if (string.IsNullOrEmpty(ConnectionString))
+            bool result = false;
+
+            if (IsHistoryLogTablesInitiazlied == false)
             {
-                throw new Exception(string.Format("{0} : ConnectionString value cannot be null or empty", Reflection.GetCurrentMethodName()));
+                HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
+                result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
+                // Init history logs tables, stored procedures and user defined types
+                if (result)
+                {
+                    _historyLogTablesInitialized = result;
+                }
             }
-            _connectionString = ConnectionString;
+
+            return result;
         }
 
-        public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, EntityTypeLookup EntityTypeID, string EntityDisplayText, int ActionUserID, CRUDType CRUDType)
+        public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
+        {
+            if (_historyLogTablesInitialized == false)
+            {
+                throw new Exception(string.Format("{0} : History log service is not initialized.", Reflection.GetCurrentMethodName()));
+            }
+
+            HistoryLog entityHistoryEntry = new HistoryLog();
+            entityHistoryEntry.CRUDType = CRUDType;
+            entityHistoryEntry.Date = DateTime.Now;
+            entityHistoryEntry.EntityID = EntityID;
+            entityHistoryEntry.EntityOwnerID = EntityOwnerID != null ? EntityOwnerID.Value : 0;
+            entityHistoryEntry.EntityTypeID = EntityTypeID;
+
+            HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry, ConnectionString);
+        }
+
+        public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, EntityTypeLookup EntityTypeID, int ActionUserID, CRUDType CRUDType)
         {
             HistoryLog entityHistoryEntry = new HistoryLog();
             entityHistoryEntry.CRUDType = CRUDType;
             entityHistoryEntry.Date = DateTime.Now;
             entityHistoryEntry.EntityID = EntityID;
-            entityHistoryEntry.EntityOwnerID = EntityOwnerID.Value;
-            entityHistoryEntry.EntityTypeID = EntityTypeID;
+            entityHistoryEntry.EntityOwnerID = EntityOwnerID != null ? EntityOwnerID.Value : 0;
+            entityHistoryEntry.EntityTypeID = EntityTypeID.EntityTypeID;
 
             entityHistoryEntry.HashID = entityHistoryEntry.GetHashCode();
 
-            HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry);
+            HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry, ConnectionString);
         }
 
         public void CreateHistoryPropertyChangeEntry(IEntity Entity)

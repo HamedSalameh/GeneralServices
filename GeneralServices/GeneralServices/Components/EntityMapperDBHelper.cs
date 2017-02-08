@@ -9,6 +9,7 @@ namespace GeneralServices.Components
 {
     internal static class EntityMapperDBHelper
     {
+        #region Private Methods
         private static DataTable createEmpty_EntityPropertiesTable()
         {
             DataTable dtEntityProperties = new DataTable();
@@ -174,7 +175,8 @@ namespace GeneralServices.Components
             }
 
             return rows;
-        }
+        } 
+        #endregion
 
         internal static bool SaveEntityMapping(string connectionString, EntityTypeLookup EntityEntry)
         {
@@ -421,6 +423,36 @@ namespace GeneralServices.Components
             }
 
             return actionResult || rows != Consts.SQL_INVALID_ROW_COUNT;
+        }
+
+        internal static int GetEntityTypeLookupID(Type EntityType, string connectionString)
+        {
+            int entityID = 0;
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand())
+                    {
+                        string TypeName = EntityType.FullName;
+                        command.Connection = connection;
+                        command.CommandText = string.Format("SELECT EntityTypeID FROM {0} WHERE EntityTypeName = '{1}'", Consts.SQL_TABLES_ENTITY_TYPE_LOOKUP_TABLE, TypeName);
+
+                        entityID = (int)command.ExecuteScalar();
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to get entity type ID for entity type {1}.\r\n{2}", Reflection.GetCurrentMethodName(), EntityType.Name, Ex.Message));
+            }
+
+            return entityID;
         }
     }
 }

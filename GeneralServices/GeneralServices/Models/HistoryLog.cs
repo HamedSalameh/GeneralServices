@@ -13,7 +13,7 @@ namespace GeneralServices.Models
         /// The type of the domain model entity that is connected to this event entry
         /// </summary>
         [Required]
-        public virtual EntityTypeLookup EntityTypeID { get; set; }
+        public virtual int EntityTypeID { get; set; }
 
         /// <summary>
         /// ID of the domain model entity that is connected to this event entry

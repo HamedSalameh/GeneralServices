@@ -29,7 +29,6 @@ namespace GeneralServices.Helpers
 
             int rows = Consts.SQL_INVALID_ROW_COUNT;
             bool result = true;
-
             string cmdString = script;
 
             try
@@ -40,6 +39,7 @@ namespace GeneralServices.Helpers
                     command.CommandText = cmdString;
 
                     rows = command.ExecuteNonQuery();
+                    result = rows != Consts.SQL_INVALID_ROW_COUNT;
                 }
             }
             catch (Exception sqlCommandEx)
@@ -50,6 +50,7 @@ namespace GeneralServices.Helpers
 
             return result;
         }
+
         /// <summary>
         /// Runs a transaction command based on the parameters (BEGIN, COMMIT and ROLLBACK)
         /// </summary>
