@@ -213,7 +213,7 @@ namespace GeneralServices.Components
 
             try
             {
-                entityID =EntityMapperDBHelper.GetEntityTypeLookupID(EntityType, ConnectionString);
+                EntityMapperDBHelper.GetEntityTypeLookupID(EntityType, ConnectionString);
             }
             catch (Exception Ex)
             {

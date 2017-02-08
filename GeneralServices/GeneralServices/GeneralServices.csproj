@@ -64,6 +64,7 @@
     <Compile Include="Interfaces\IEntity.cs" />
     <Compile Include="Interfaces\IGenericRepositoryBase.cs" />
     <Compile Include="Interfaces\IHistoryService.cs" />
+    <Compile Include="Models\EntityPropertyChange.cs" />
     <Compile Include="Models\EntityPropertyLookup.cs" />
     <Compile Include="Models\EntityTypeLookup.cs" />
     <Compile Include="Models\HistoryLog.cs" />

@@ -3,6 +3,7 @@ using GeneralServices.Interfaces;
 using GeneralServices.Models;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using static GeneralServices.Enums;
 
@@ -86,7 +87,7 @@ namespace GeneralServices.Services
             return result;
         }
 
-        public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
+        public void CreateHistoryEntry(int EntityID, List<KeyValuePair<int, object>> EntityPropertoes, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
         {
             if (_historyLogTablesInitialized == false)
             {

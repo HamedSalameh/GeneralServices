@@ -9,7 +9,7 @@ namespace GeneralServices.Helpers
     {
         private const uint _basePrime = 2166136261;
         private const int _Prime = 16777619;
-        public static int? calculateSingleFieldHash(object field)
+        public static int? calculateSingleFieldHash(PropertyInfo field)
         {
             int? hash = null;
 
@@ -18,7 +18,7 @@ namespace GeneralServices.Helpers
             {
                 hash = (int)_basePrime;
                 // Suitable nullity checks etc, of course :)
-                hash = (hash * _Prime) ^ field.GetHashCode();
+                hash = (hash * _Prime) ^ (field.ReflectedType.FullName + "_" + field.Name).GetHashCode();
             }
 
             return hash;

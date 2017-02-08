@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -165,6 +166,22 @@ namespace GeneralServices.Helpers
             }
 
             return DomainTypes;
+        }
+
+        public static List<KeyValuePair<int,object>> GetObjectPropertiesAndValues(dynamic Object)
+        {
+            Type type = Object.GetType();
+            List<KeyValuePair<int, object>> properties = new List<KeyValuePair<int, object>>();
+
+            IList<PropertyInfo> props = new List<PropertyInfo>(type.GetProperties());
+
+            foreach (PropertyInfo prop in props)
+            {
+                object propValue = prop.GetValue(Object, null);
+                properties.Add(new KeyValuePair<int, object>(General.calculateSingleFieldHash(prop).Value, propValue));
+            }
+
+            return properties;
         }
     }
 }
