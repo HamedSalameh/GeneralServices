@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
 using System.Reflection;
 using System.Web.Configuration;
 
@@ -23,7 +24,7 @@ namespace GeneralServices.Helpers
             return hash;
         }
 
-        public static int? calculateClassHash(dynamic Object)
+        public static int? calculateClassHash(Type Object)
         {
             int? hash = null;
             
@@ -33,8 +34,11 @@ namespace GeneralServices.Helpers
                 hash = (int)_basePrime;
                 foreach (PropertyInfo prop in props)
                 {
-                    hash = (hash * _Prime) ^ prop.GetHashCode();
+                    hash = (hash * _Prime) ^ prop.Name.GetHashCode();
                 }
+
+                // append the class name
+                hash = (hash * _Prime) ^ Object.FullName.GetHashCode();
             }
 
             return hash;
