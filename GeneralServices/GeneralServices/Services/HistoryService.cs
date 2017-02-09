@@ -120,9 +120,12 @@ namespace GeneralServices.Services
 
         public void CreateHistoryEntry(int EntityID, object OldEntity, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
-            var props = Reflection.GetObjectPropertiesAndValues(NewEntity);
+            var newProps = Reflection.GetObjectPropertiesAndValues(NewEntity);
+
+            var changes = Reflection.GetEntityPropertyChanges(OldEntity, NewEntity);
+
             int _hash = General.calculateClassHash(NewEntity.GetType()).Value;
-            var _changes = Reflection.GetEntityPropertyChanges(OldEntity, NewEntity);
+            
         }
 
         public void CreateHistoryPropertyChangeEntry(IEntity Entity)

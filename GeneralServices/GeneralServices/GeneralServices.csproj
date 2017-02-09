@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes\IgnoreChanges.cs" />
     <Compile Include="BaseResult.cs" />
     <Compile Include="Components\EntityMapper.cs" />
     <Compile Include="Components\EntityMapperDBHelper.cs" />

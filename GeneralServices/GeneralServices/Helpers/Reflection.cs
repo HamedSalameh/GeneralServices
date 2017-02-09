@@ -1,4 +1,5 @@
-﻿using GeneralServices.Models;
+﻿using GeneralServices.Attributes;
+using GeneralServices.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -187,7 +188,48 @@ namespace GeneralServices.Helpers
 
         public static List<EntityPropertyChange> GetEntityPropertyChanges(object OldEntity, object NewEntity)
         {
+            if(OldEntity.GetType() != NewEntity.GetType())
+            {
+                throw new Exception(string.Format("{0} : Cannot get property changes for different entitiy types."));
+            }
+
             List<EntityPropertyChange> entityPropertyChanges = new List<EntityPropertyChange>();
+
+            var oldValues = OldEntity.GetType().GetProperties();
+            var newValues = NewEntity.GetType().GetProperties();
+            var dateChanged = DateTime.Now;
+
+            foreach(PropertyInfo p in oldValues)
+            {
+                try
+                {
+                    var matchingProperty = newValues.Where(npv => 
+                        npv.Name.Equals(p.Name) && 
+                        npv.PropertyType == p.PropertyType &&
+                        Attribute.IsDefined(npv, typeof(IgnoreChanges)) == false).FirstOrDefault();
+
+                    if (matchingProperty != null)
+                    {
+                        var oldValue = p.GetValue(OldEntity) != null ? p.GetValue(OldEntity).ToString() : null;
+                        var newValue = matchingProperty.GetValue(NewEntity) != null ? matchingProperty.GetValue(NewEntity).ToString() : null;
+
+                        if (newValue != oldValue)
+                        {
+                            entityPropertyChanges.Add(new EntityPropertyChange
+                            {
+                                OriginalValueAsText = oldValue,
+                                CurrentValueAsText = newValue,
+                                EntityPropertyID = General.calculateSingleFieldHash(p).Value,
+                                Date = dateChanged
+                            });
+                        }
+                    }
+                }
+                catch (Exception Ex)
+                {
+                    var m = Ex;
+                }
+            }
 
             return entityPropertyChanges;
         }
