@@ -9,7 +9,7 @@ using static GeneralServices.Enums;
 
 namespace GeneralServices.Services
 {
-    public class HistoryService : IHistoryService
+    public class HistoryService
     {
         #region Private properties
         private static HistoryService _instance;
@@ -116,6 +116,13 @@ namespace GeneralServices.Services
             entityHistoryEntry.HashID = entityHistoryEntry.GetHashCode();
 
             HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry, ConnectionString);
+        }
+
+        public void CreateHistoryEntry(int EntityID, object OldEntity, object NewEntity, int ActionUserID, CRUDType CRUDType)
+        {
+            var props = Reflection.GetObjectPropertiesAndValues(NewEntity);
+            int _hash = General.calculateClassHash(NewEntity.GetType()).Value;
+            var _changes = Reflection.GetEntityPropertyChanges(OldEntity, NewEntity);
         }
 
         public void CreateHistoryPropertyChangeEntry(IEntity Entity)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GeneralServices.Models;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -182,6 +183,13 @@ namespace GeneralServices.Helpers
             }
 
             return properties;
+        }
+
+        public static List<EntityPropertyChange> GetEntityPropertyChanges(object OldEntity, object NewEntity)
+        {
+            List<EntityPropertyChange> entityPropertyChanges = new List<EntityPropertyChange>();
+
+            return entityPropertyChanges;
         }
     }
 }
