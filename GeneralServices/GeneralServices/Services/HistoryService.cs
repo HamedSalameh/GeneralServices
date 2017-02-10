@@ -1,10 +1,7 @@
 ﻿using GeneralServices.Helpers;
-using GeneralServices.Interfaces;
 using GeneralServices.Models;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using static GeneralServices.Enums;
 
 namespace GeneralServices.Services
@@ -87,8 +84,9 @@ namespace GeneralServices.Services
             return result;
         }
 
-        public void CreateHistoryEntry(int EntityID, List<KeyValuePair<int, object>> EntityPropertoes, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
+        private int CreateEntityHistoryEntry(int EntityID, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
         {
+            int historyLogID = Consts.INVALID_INDEX;
             if (_historyLogTablesInitialized == false)
             {
                 throw new Exception(string.Format("{0} : History log service is not initialized.", Reflection.GetCurrentMethodName()));
@@ -100,46 +98,46 @@ namespace GeneralServices.Services
             entityHistoryEntry.EntityID = EntityID;
             entityHistoryEntry.EntityOwnerID = EntityOwnerID != null ? EntityOwnerID.Value : 0;
             entityHistoryEntry.EntityTypeID = EntityTypeID;
-
-            HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry, ConnectionString);
-        }
-
-        public void CreateHistoryEntry(int EntityID, int? EntityOwnerID, EntityTypeLookup EntityTypeID, int ActionUserID, CRUDType CRUDType)
-        {
-            HistoryLog entityHistoryEntry = new HistoryLog();
-            entityHistoryEntry.CRUDType = CRUDType;
-            entityHistoryEntry.Date = DateTime.Now;
-            entityHistoryEntry.EntityID = EntityID;
-            entityHistoryEntry.EntityOwnerID = EntityOwnerID != null ? EntityOwnerID.Value : 0;
-            entityHistoryEntry.EntityTypeID = EntityTypeID.EntityTypeID;
-
             entityHistoryEntry.HashID = entityHistoryEntry.GetHashCode();
 
-            HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry, ConnectionString);
+            historyLogID = HistoryServiceDBHelper.AddEntityHistoryEntry(entityHistoryEntry, ConnectionString);
+            return historyLogID;
+        }
+
+        private void CreateEntityPropertyChangesHistoryLogs(List<EntityPropertyChange> Changes, int HistoryLogID)
+        {
+            if (_historyLogTablesInitialized == false)
+            {
+                throw new Exception(string.Format("{0} : History log service is not initialized.", Reflection.GetCurrentMethodName()));
+            }
+
+            if (Changes != null && Changes.Count > 0 && HistoryLogID != Consts.INVALID_INDEX)
+            {
+                Changes.ForEach(c => c.HistoryLogID = HistoryLogID);
+                HistoryServiceDBHelper.AddEntityPropertyChangesHistoryLogs(Changes);
+            }
         }
 
         public void CreateHistoryEntry(int EntityID, object OldEntity, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
-            var newProps = Reflection.GetObjectPropertiesAndValues(NewEntity);
-
             var changes = Reflection.GetEntityPropertyChanges(OldEntity, NewEntity);
-
             int _hash = General.calculateClassHash(NewEntity.GetType()).Value;
-            
+            // Save history log entry for the entity
+            try
+            {
+                int historyLogID = CreateEntityHistoryEntry(EntityID, 0, _hash, 0, CRUDType);
+                // Save history log for the entity property changes
+                if (historyLogID != Consts.INVALID_INDEX)
+                {
+                    CreateEntityPropertyChangesHistoryLogs(changes, historyLogID);
+                }
+                
+            }
+            catch (Exception Ex)
+            {
+                throw Ex;
+            }
         }
 
-        public void CreateHistoryPropertyChangeEntry(IEntity Entity)
-        {
-            Hashtable hash = new Hashtable();
-            // Parse the entity properties using refletion
-            PropertyInfo[] pInfo = Entity.GetType().GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            // get each property it's EntityPropertyID from EntityPropertyLookup
-            // compare the properties in the list with their values on the DB
-        }
-
-        public void GetDomainEntityPropertyLookupTable()
-        {
-
-        }
     }
 }

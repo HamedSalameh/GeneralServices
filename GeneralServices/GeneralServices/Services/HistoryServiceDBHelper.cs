@@ -1,6 +1,7 @@
 ﻿using GeneralServices.Helpers;
 using GeneralServices.Models;
 using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 
 namespace GeneralServices.Services
@@ -132,7 +133,7 @@ namespace GeneralServices.Services
                     connection.Close();
                 }
             }
-            catch (System.Exception Ex)
+            catch (Exception Ex)
             {
                 throw Ex;
             }
@@ -185,9 +186,15 @@ namespace GeneralServices.Services
             return result;
         }
 
-        public static bool AddEntityHistoryEntry(HistoryLog EntityEntry, string ConnectionString)
+        /// <summary>
+        /// Inserts a new entity history entry and returns the history log ID
+        /// </summary>
+        /// <param name="EntityEntry"></param>
+        /// <param name="ConnectionString"></param>
+        /// <returns>NEw history log ID</returns>
+        internal static int AddEntityHistoryEntry(HistoryLog EntityEntry, string ConnectionString)
         {
-            bool result = false;
+            int HistoryLogID = Consts.INVALID_INDEX;
 
             try
             {
@@ -199,7 +206,10 @@ namespace GeneralServices.Services
                     {
                         command.Connection = connection;
                         command.CommandText = string.Format("INSERT INTO {0} (EntityTypeLookup, EntityID, EntityOwnerID, Date, CRUDType, HashID) "+
-                            "VALUES ({1},{2},{3},'{4}','{5}',{6})", Consts.SQL_TABLES_HISTORY_HISTORYLOG,
+                            " OUTPUT INSERTED.HistoryLogID " +
+                            " VALUES ({1},{2},{3},'{4}','{5}',{6}); "
+                            , Consts.SQL_TABLES_HISTORY_HISTORYLOG,
+
                             EntityEntry.EntityTypeID,
                             EntityEntry.EntityID,
                             EntityEntry.EntityOwnerID,
@@ -208,7 +218,12 @@ namespace GeneralServices.Services
                             EntityEntry.HashID
                             );
 
-                        int rows = command.ExecuteNonQuery();
+                        int rows = (int)command.ExecuteScalar();
+
+                        if (rows != Consts.SQL_INVALID_ROW_COUNT)
+                        {
+                            HistoryLogID = rows;
+                        } 
                     }
 
                     connection.Close();
@@ -220,7 +235,11 @@ namespace GeneralServices.Services
             }
 
 
-            return result;
+            return HistoryLogID;
+        }
+
+        internal static void AddEntityPropertyChangesHistoryLogs(List<EntityPropertyChange> Changes)
+        {
         }
     }
 }

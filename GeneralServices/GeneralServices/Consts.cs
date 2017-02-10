@@ -2,6 +2,8 @@
 {
     public static class Consts
     {
+        public static readonly int INVALID_INDEX = -1;
+
         public static readonly string SQL_TRAN_COMMAND_BEGIN = "BEGIN ";
         public static readonly string SQL_TRAN_COMMAND_COMMIT = "COMMIT ";
         public static readonly string SQL_TRAN_COMMAND_ROLLBACK = "ROLLBACK ";
