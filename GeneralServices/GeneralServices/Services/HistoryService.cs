@@ -11,7 +11,7 @@ namespace GeneralServices.Services
         #region Private properties
         private static HistoryService _instance;
         private static string _connectionString;
-        private static bool _historyLogTablesInitialized;
+        private static bool _historyServiceInitialized;
         #endregion
 
         #region Public Properties
@@ -30,11 +30,11 @@ namespace GeneralServices.Services
                 return _connectionString;
             }
         }
-        public bool IsHistoryLogTablesInitiazlied
+        public bool IsHistoryServiceInitiazlied
         {
             get
             {
-                return _historyLogTablesInitialized;
+                return _historyServiceInitialized;
             }
         } 
         #endregion
@@ -44,7 +44,7 @@ namespace GeneralServices.Services
         {
             // do all initalizations here
             _connectionString = string.Empty;
-            _historyLogTablesInitialized = false;
+            _historyServiceInitialized = false;
         }
 
         public static HistoryService Instance
@@ -64,7 +64,7 @@ namespace GeneralServices.Services
         {
             bool result = false;
 
-            if (IsHistoryLogTablesInitiazlied == false)
+            if (IsHistoryServiceInitiazlied == false)
             {
                 HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
                 result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
@@ -74,10 +74,16 @@ namespace GeneralServices.Services
                     HistoryServiceDBHelper.createEntityPropertyChangesTable(ConnectionString);
                     result = HistoryServiceDBHelper.validateEntityPropertyChangesTable(ConnectionString);
                 }
+
+                if (result)
+                {
+                    HistoryServiceDBHelper.createUDT_EntityPropertChangesTable(ConnectionString);
+                    HistoryServiceDBHelper.createUSP_InsertEntityPropertyChanges(ConnectionString);
+                }
                 // Init history logs tables, stored procedures and user defined types
                 if (result)
                 {
-                    _historyLogTablesInitialized = result;
+                    _historyServiceInitialized = result;
                 }
             }
 
@@ -87,7 +93,7 @@ namespace GeneralServices.Services
         private int CreateEntityHistoryEntry(int EntityID, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
         {
             int historyLogID = Consts.INVALID_INDEX;
-            if (_historyLogTablesInitialized == false)
+            if (_historyServiceInitialized == false)
             {
                 throw new Exception(string.Format("{0} : History log service is not initialized.", Reflection.GetCurrentMethodName()));
             }
@@ -106,7 +112,7 @@ namespace GeneralServices.Services
 
         private void CreateEntityPropertyChangesHistoryLogs(List<EntityPropertyChange> Changes, int HistoryLogID)
         {
-            if (_historyLogTablesInitialized == false)
+            if (_historyServiceInitialized == false)
             {
                 throw new Exception(string.Format("{0} : History log service is not initialized.", Reflection.GetCurrentMethodName()));
             }
@@ -114,7 +120,7 @@ namespace GeneralServices.Services
             if (Changes != null && Changes.Count > 0 && HistoryLogID != Consts.INVALID_INDEX)
             {
                 Changes.ForEach(c => c.HistoryLogID = HistoryLogID);
-                HistoryServiceDBHelper.AddEntityPropertyChangesHistoryLogs(Changes);
+                HistoryServiceDBHelper.AddEntityPropertyChangesHistoryLogs(Changes, ConnectionString);
             }
         }
 

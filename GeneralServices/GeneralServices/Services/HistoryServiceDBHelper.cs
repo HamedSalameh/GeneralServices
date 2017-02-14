@@ -2,6 +2,7 @@
 using GeneralServices.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 
 namespace GeneralServices.Services
@@ -186,6 +187,108 @@ namespace GeneralServices.Services
             return result;
         }
 
+        internal static void createUDT_EntityPropertChangesTable(string ConnectionString)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    connection.Open();
+
+                    string cmdString = string.Format(
+                                        "IF NOT EXISTS(select * from sys.types where name = '{0}')" +
+                                        "BEGIN " +
+                                        "CREATE TYPE {0} AS TABLE(" +
+                                        "   HistoryLogID INT NOT NULL, " +
+                                        "   EntityPropertyID INT NOT NULL, " +
+                                        "   CurrentValueAsText NVARCHAR(MAX), " +
+                                        "   OriginalValueAsText NVARCHAR(MAX), " +
+                                        "   Date DATETIME NOT NULL," +
+                                        "   HashID INT NOT NULL" +
+                                        ") " +
+                                        "END "
+                            , Consts.SQL_TYPES_UDT_HistoryServiceDBHelper_EntityProperties);
+
+                    try
+                    {
+                        using (SqlCommand command = new SqlCommand())
+                        {
+                            command.Connection = connection;
+                            command.CommandText = cmdString;
+
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception sqlCommandEx)
+                    {
+                        throw sqlCommandEx;
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+        }
+
+        internal static void createUSP_InsertEntityPropertyChanges(string connectionString)
+        {
+            string cmdString = string.Format(
+                "IF EXISTS(select * from sys.procedures where object_id = object_id(('{0}'))) " +
+                "BEGIN " +
+                    "DROP PROCEDURE {0} " +
+                "END "
+                , Consts.SQL_PROCEDURES_USP_HistoryServiceDBHelper_InsertIntoEntityPropertyChangesTable);
+
+            string cmdProcString = string.Format(
+
+                "CREATE PROCEDURE {0} " +
+                    "@dtEntityPropertyChanges {1} READONLY " +
+                "AS " +
+                "    BEGIN " +
+                "       INSERT INTO {2} " +
+                "       SELECT * FROM @dtEntityPropertyChanges " +
+                "    END "
+                , Consts.SQL_PROCEDURES_USP_HistoryServiceDBHelper_InsertIntoEntityPropertyChangesTable
+                , Consts.SQL_TYPES_UDT_HistoryServiceDBHelper_EntityProperties
+                , Consts.SQL_TABLES_HISTORY_ENTITYPROPERTYCHANGES);
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    try
+                    {
+                        using (SqlCommand command = new SqlCommand())
+                        {
+                            command.Connection = connection;
+
+                            command.CommandText = cmdString;
+                            command.ExecuteNonQuery();
+
+                            command.CommandText = cmdProcString;
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                    catch (Exception sqlCommandEx)
+                    {
+                        throw sqlCommandEx;
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+        }
         /// <summary>
         /// Inserts a new entity history entry and returns the history log ID
         /// </summary>
@@ -238,8 +341,71 @@ namespace GeneralServices.Services
             return HistoryLogID;
         }
 
-        internal static void AddEntityPropertyChangesHistoryLogs(List<EntityPropertyChange> Changes)
+        internal static void AddEntityPropertyChangesHistoryLogs(List<EntityPropertyChange> Changes, string ConnectionString)
         {
+            // try to save entity propery changes
+            if (Changes != null && Changes.Count > 0)
+            {
+                // convert the list of changes to datatable
+                DataTable dtChange = prepareDataTable(Changes);
+
+                try
+                {
+                    using (SqlConnection connection = new SqlConnection(ConnectionString))
+                    {
+                        connection.Open();
+
+                        using (SqlCommand command = new SqlCommand())
+                        {
+                            command.Connection = connection;
+                            command.CommandType = CommandType.StoredProcedure;
+                            command.CommandText = Consts.SQL_PROCEDURES_USP_HistoryServiceDBHelper_InsertIntoEntityPropertyChangesTable;
+
+                            SqlParameter changesParam = command.Parameters.AddWithValue("@dtEntityPropertyChanges", dtChange);
+                            changesParam.SqlDbType = SqlDbType.Structured;
+
+                            command.ExecuteNonQuery();
+                        }
+
+                        connection.Close();
+                    }
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+        }
+
+        private static DataTable prepareDataTable(List<EntityPropertyChange> Changes)
+        {
+            DataTable dtChanges = new DataTable();
+            DataRow dtRow;
+
+            dtChanges.Columns.Add("HistoryLogID", typeof(int));
+            dtChanges.Columns.Add("EntityPropertyID", typeof(int));
+            dtChanges.Columns.Add("CurrentValueAsText", typeof(string));
+            dtChanges.Columns.Add("OriginalValueAsText", typeof(string));
+            dtChanges.Columns.Add("Date", typeof(DateTime));
+            dtChanges.Columns.Add("HashID", typeof(int));
+
+            if (Changes != null && Changes.Count > 0)
+            {
+                foreach (var change in Changes)
+                {
+                    dtRow = dtChanges.NewRow();
+                    dtRow["HistoryLogID"] = change.HistoryLogID;
+                    dtRow["EntityPropertyID"] = change.EntityPropertyID;
+                    dtRow["CurrentValueAsText"] = change.CurrentValueAsText;
+                    dtRow["OriginalValueAsText"] = change.OriginalValueAsText;
+                    dtRow["Date"] = change.Date;
+                    dtRow["HashID"] = change.HashID;
+
+                    dtChanges.Rows.Add(dtRow);
+                } 
+            }
+
+            return dtChanges;
         }
     }
 }
