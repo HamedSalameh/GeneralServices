@@ -33,7 +33,7 @@ namespace GeneralServices.Services
                         "           EntityOwnerID INT DEFAULT 0," +
                         "           Date DATETIME NOT NULL," +
                         "           CRUDType TINYINT NOT NULL," +
-                        "           ActionUserID INT DEFAULT 0" +
+                        "           ActionUserID INT DEFAULT 0," +
                         "           HashID INT" +
                         "           ) " +
                         "END "
