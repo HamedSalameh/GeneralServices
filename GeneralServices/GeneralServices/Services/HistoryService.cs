@@ -131,7 +131,7 @@ namespace GeneralServices.Services
             // Save history log entry for the entity
             try
             {
-                int historyLogID = CreateEntityHistoryEntry(EntityID, 0, _hash, 0, CRUDType);
+                int historyLogID = CreateEntityHistoryEntry(EntityID, 0, _hash, ActionUserID, CRUDType);
                 // Save history log for the entity property changes
                 if (historyLogID != Consts.INVALID_INDEX)
                 {

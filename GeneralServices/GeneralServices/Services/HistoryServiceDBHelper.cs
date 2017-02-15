@@ -30,9 +30,10 @@ namespace GeneralServices.Services
                         "           HistoryLogID INT PRIMARY KEY IDENTITY," +
                         "           EntityTypeLookup INT NOT NULL," +
                         "           EntityID INT NOT NULL," +
-                        "           EntityOwnerID INT," +
+                        "           EntityOwnerID INT DEFAULT 0," +
                         "           Date DATETIME NOT NULL," +
                         "           CRUDType TINYINT NOT NULL," +
+                        "           ActionUserID INT DEFAULT 0" +
                         "           HashID INT" +
                         "           ) " +
                         "END "
@@ -115,11 +116,11 @@ namespace GeneralServices.Services
                         "       CREATE TABLE {0} " +
                         "           (" +
                         "           EntityPropertyChangeID INT PRIMARY KEY IDENTITY," +
-                        "           HistoryLogID INT NOT NULL," +
-                        "           EntityPropertyID INT NOT NULL," +
-                        "           CurrentValueAsText INT NOT NULL," +
-                        "           OriginalValueAsText INT," +
-                        "           Date DATETIME NOT NULL," +
+                        "           HistoryLogID INT NOT NULL, " +
+                        "           EntityPropertyID INT NOT NULL, " +
+                        "           CurrentValueAsText NVARCHAR(200), " +
+                        "           OriginalValueAsText NVARCHAR(200), " +
+                        "           Date DATETIME NOT NULL, " +
                         "           HashID INT, " +
 
                         "           CONSTRAINT FK_HistoryLogID FOREIGN KEY (HistoryLogID) REFERENCES {1}(HistoryLogID), " +
@@ -310,16 +311,20 @@ namespace GeneralServices.Services
                         command.Connection = connection;
                         command.CommandText = string.Format("INSERT INTO {0} (EntityTypeLookup, EntityID, EntityOwnerID, Date, CRUDType, HashID) "+
                             " OUTPUT INSERTED.HistoryLogID " +
-                            " VALUES ({1},{2},{3},'{4}','{5}',{6}); "
-                            , Consts.SQL_TABLES_HISTORY_HISTORYLOG,
-
-                            EntityEntry.EntityTypeID,
-                            EntityEntry.EntityID,
-                            EntityEntry.EntityOwnerID,
-                            EntityEntry.Date,
-                            (int)EntityEntry.CRUDType,
-                            EntityEntry.HashID
+                            " VALUES (@etype,@eid,@eownerid,@udate,@crud,@hash); "
+                            , Consts.SQL_TABLES_HISTORY_HISTORYLOG
                             );
+
+                        command.Parameters.AddWithValue("@etype", EntityEntry.EntityTypeID);
+                        command.Parameters.AddWithValue("@eid", EntityEntry.EntityID);
+                        command.Parameters.AddWithValue("@eownerid", EntityEntry.EntityOwnerID);
+
+                        var updateDate = new SqlParameter("@udate", SqlDbType.DateTime2);
+                        updateDate.Value = EntityEntry.Date;
+                        command.Parameters.Add(updateDate);
+                        
+                        command.Parameters.AddWithValue("@crud",(int)EntityEntry.CRUDType);
+                        command.Parameters.AddWithValue("@hash", EntityEntry.HashID);
 
                         int rows = (int)command.ExecuteScalar();
 
