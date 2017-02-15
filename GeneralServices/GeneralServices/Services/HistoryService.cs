@@ -132,6 +132,14 @@ namespace GeneralServices.Services
             }
         }
 
+        /// <summary>
+        /// Creates a new entry in the history table for a domain model entity
+        /// </summary>
+        /// <param name="EntityID">The entity ID of the domain model entity</param>
+        /// <param name="OldEntity">An object holding the old entity object (before last change)</param>
+        /// <param name="NewEntity">An object holding the new entity object (after the change was comitted to DB)</param>
+        /// <param name="ActionUserID">(Optional) The user ID that executed the last change on the domain model entity</param>
+        /// <param name="CRUDType">Lookup defining the change type (CREATE, UPDAT or DELETE)</param>
         public void CreateHistoryEntry(int EntityID, object OldEntity, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
             List<EntityPropertyChange> changes = null;
