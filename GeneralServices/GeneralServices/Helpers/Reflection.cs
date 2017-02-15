@@ -170,7 +170,7 @@ namespace GeneralServices.Helpers
             return DomainTypes;
         }
 
-        public static List<KeyValuePair<int,object>> GetObjectPropertiesAndValues(dynamic Object)
+        public static List<KeyValuePair<int, object>> GetObjectPropertiesAndValues(dynamic Object)
         {
             Type type = Object.GetType();
             List<KeyValuePair<int, object>> properties = new List<KeyValuePair<int, object>>();
@@ -186,9 +186,44 @@ namespace GeneralServices.Helpers
             return properties;
         }
 
+        public static List<EntityPropertyChange> GetEntityPropertyValuesAsChanges(object Entity)
+        {
+            List<EntityPropertyChange> entityPropertyChanges = new List<EntityPropertyChange>();
+
+            if (Entity != null)
+            {
+                var Values = Entity.GetType().GetProperties();
+                var dateChanged = DateTime.Now;
+
+                foreach (PropertyInfo p in Values)
+                {
+                    try
+                    {
+                        if (Attribute.IsDefined(p, typeof(IgnoreChanges)) == false)
+                        {
+                            var newValue = p.GetValue(Entity) != null ? p.GetValue(Entity).ToString() : null;
+
+                            entityPropertyChanges.Add(new EntityPropertyChange
+                            {
+                                CurrentValueAsText = newValue,
+                                EntityPropertyID = General.calculateSingleFieldHash(p).Value,
+                                Date = dateChanged
+                            });
+                        }
+                    }
+                    catch (Exception Ex)
+                    {
+                        var m = Ex;
+                    }
+                }
+            }
+
+            return entityPropertyChanges;
+        }
+
         public static List<EntityPropertyChange> GetEntityPropertyChanges(object OldEntity, object NewEntity)
         {
-            if(OldEntity.GetType() != NewEntity.GetType())
+            if (OldEntity.GetType() != NewEntity.GetType())
             {
                 throw new Exception(string.Format("{0} : Cannot get property changes for different entitiy types."));
             }
@@ -199,12 +234,12 @@ namespace GeneralServices.Helpers
             var newValues = NewEntity.GetType().GetProperties();
             var dateChanged = DateTime.Now;
 
-            foreach(PropertyInfo p in oldValues)
+            foreach (PropertyInfo p in oldValues)
             {
                 try
                 {
-                    var matchingProperty = newValues.Where(npv => 
-                        npv.Name.Equals(p.Name) && 
+                    var matchingProperty = newValues.Where(npv =>
+                        npv.Name.Equals(p.Name) &&
                         npv.PropertyType == p.PropertyType &&
                         Attribute.IsDefined(npv, typeof(IgnoreChanges)) == false).FirstOrDefault();
 

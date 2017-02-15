@@ -36,7 +36,7 @@ namespace GeneralServices.Services
             {
                 return _historyServiceInitialized;
             }
-        } 
+        }
         #endregion
 
         #region Singleton contructor
@@ -124,24 +124,51 @@ namespace GeneralServices.Services
             }
         }
 
+        public void CreateHistoryEntry(int EntityID, object NewEntity, int ActionUserID, CRUDType CRUDType)
+        {
+            if (EntityID != 0 && NewEntity != null)
+            {
+                CreateHistoryEntry(EntityID, null, NewEntity, ActionUserID, CRUDType);
+            }
+        }
+
         public void CreateHistoryEntry(int EntityID, object OldEntity, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
-            var changes = Reflection.GetEntityPropertyChanges(OldEntity, NewEntity);
-            int _hash = General.calculateClassHash(NewEntity.GetType()).Value;
-            // Save history log entry for the entity
+            List<EntityPropertyChange> changes = null;
             try
             {
-                int historyLogID = CreateEntityHistoryEntry(EntityID, 0, _hash, ActionUserID, CRUDType);
-                // Save history log for the entity property changes
-                if (historyLogID != Consts.INVALID_INDEX)
+                if (OldEntity != null && NewEntity != null)
                 {
-                    CreateEntityPropertyChangesHistoryLogs(changes, historyLogID);
+                    changes = Reflection.GetEntityPropertyChanges(OldEntity, NewEntity);
                 }
-                
+                // special case: new entity, does not have an 'old entity' since it's a newly created one
+                else if (OldEntity == null && NewEntity != null && CRUDType == CRUDType.Create)
+                {
+                    changes = Reflection.GetEntityPropertyValuesAsChanges(NewEntity);
+                }
             }
-            catch (Exception Ex)
+            catch (Exception)
             {
-                throw Ex;
+                throw;
+            }
+
+            if (changes != null && changes.Count > 0)
+            {
+                int _hash = General.calculateClassHash(NewEntity.GetType()).Value;
+                // Save history log entry for the entity
+                try
+                {
+                    int historyLogID = CreateEntityHistoryEntry(EntityID, 0, _hash, ActionUserID, CRUDType);
+                    // Save history log for the entity property changes
+                    if (historyLogID != Consts.INVALID_INDEX)
+                    {
+                        CreateEntityPropertyChangesHistoryLogs(changes, historyLogID);
+                    }
+                }
+                catch (Exception Ex)
+                {
+                    throw Ex;
+                } 
             }
         }
 
