@@ -46,7 +46,7 @@ namespace GeneralServices.Models
         public static HistoryLog MapRecord(this DataRow Row)
         {
             HistoryLog entry = null;
-            int _eID = -1,_actionUserID = -1, _eOwnerID = -1, etl = 0, _hashID = 0;
+            int _eID = -1,_actionUserID = -1, _eOwnerID = -1, etl = 0, _hashID = 0, _hID = 0;
             CRUDType _crudType;
 
             if (Row != null)
@@ -56,6 +56,7 @@ namespace GeneralServices.Models
 
                 if (_eID != -1)
                 {
+                    entry = new HistoryLog();
                     entry.EntityID = _eID;
                     DateTime.TryParse(Row["Date"].ToString(), out _date);
 
@@ -64,12 +65,13 @@ namespace GeneralServices.Models
                     Enum.TryParse(Row["CRUDType"].ToString(), out _crudType);
                     int.TryParse(Row["ActionUserID"].ToString(), out _actionUserID);
                     int.TryParse(Row["HashID"].ToString(), out _hashID);
+                    int.TryParse(Row["HistoryLogID"].ToString(), out _hID);
 
                     entry.EntityTypeID = etl;
                     entry.EntityOwnerID = _eOwnerID;
                     entry.CRUDType = _crudType;
                     entry.Date = _date;
-
+                    entry.HistoryLogID = _hID;
                 }
             }
             return entry;
@@ -77,7 +79,7 @@ namespace GeneralServices.Models
 
         public static List<HistoryLog> MapTable(this DataTable Table)
         {
-            List<HistoryLog> historyLog = null;
+            List<HistoryLog> historyLog = new List<HistoryLog>();
 
             if (Table != null && Table.Rows != null && Table.Rows.Count > 0)
             {
