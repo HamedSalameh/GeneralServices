@@ -2,6 +2,7 @@
 using GeneralServices.Models;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using static GeneralServices.Enums;
 
 namespace GeneralServices.Services
@@ -60,36 +61,7 @@ namespace GeneralServices.Services
         }
         #endregion
 
-        public bool Initialize()
-        {
-            bool result = false;
-
-            if (IsHistoryServiceInitiazlied == false)
-            {
-                HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
-                result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
-                // if main history table exists, check the entity property changes table
-                if (result)
-                {
-                    HistoryServiceDBHelper.createEntityPropertyChangesTable(ConnectionString);
-                    result = HistoryServiceDBHelper.validateEntityPropertyChangesTable(ConnectionString);
-                }
-
-                if (result)
-                {
-                    HistoryServiceDBHelper.createUDT_EntityPropertChangesTable(ConnectionString);
-                    HistoryServiceDBHelper.createUSP_InsertEntityPropertyChanges(ConnectionString);
-                }
-                // Init history logs tables, stored procedures and user defined types
-                if (result)
-                {
-                    _historyServiceInitialized = result;
-                }
-            }
-
-            return result;
-        }
-
+        #region Private Methods
         private int CreateEntityHistoryEntry(int EntityID, int? EntityOwnerID, int EntityTypeID, int ActionUserID, CRUDType CRUDType)
         {
             int historyLogID = Consts.INVALID_INDEX;
@@ -123,9 +95,46 @@ namespace GeneralServices.Services
                 HistoryServiceDBHelper.AddEntityPropertyChangesHistoryLogs(Changes, ConnectionString);
             }
         }
+        #endregion
+
+
+        public bool Initialize()
+        {
+            bool result = false;
+
+            if (IsHistoryServiceInitiazlied == false)
+            {
+                HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
+                result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
+                // if main history table exists, check the entity property changes table
+                if (result)
+                {
+                    HistoryServiceDBHelper.createEntityPropertyChangesTable(ConnectionString);
+                    result = HistoryServiceDBHelper.validateEntityPropertyChangesTable(ConnectionString);
+                }
+
+                if (result)
+                {
+                    HistoryServiceDBHelper.createUDT_EntityPropertChangesTable(ConnectionString);
+                    HistoryServiceDBHelper.createUSP_InsertEntityPropertyChanges(ConnectionString);
+                }
+                // Init history logs tables, stored procedures and user defined types
+                if (result)
+                {
+                    _historyServiceInitialized = result;
+                }
+            }
+
+            return result;
+        }
 
         public void CreateHistoryEntry(int EntityID, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
+            if (!IsHistoryServiceInitiazlied)
+            {
+                throw new Exception(string.Format("{0} : History service is not yet initialized.", Reflection.GetCurrentMethodName()));
+            }
+            
             if (EntityID != 0 && NewEntity != null)
             {
                 CreateHistoryEntry(EntityID, null, NewEntity, ActionUserID, CRUDType);
@@ -142,6 +151,11 @@ namespace GeneralServices.Services
         /// <param name="CRUDType">Lookup defining the change type (CREATE, UPDAT or DELETE)</param>
         public void CreateHistoryEntry(int EntityID, object OldEntity, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
+            if (!IsHistoryServiceInitiazlied)
+            {
+                throw new Exception(string.Format("{0} : History service is not yet initialized.", Reflection.GetCurrentMethodName()));
+            }
+
             List<EntityPropertyChange> changes = null;
             try
             {
@@ -176,9 +190,37 @@ namespace GeneralServices.Services
                 catch (Exception Ex)
                 {
                     throw Ex;
-                } 
+                }
             }
         }
 
+        public List<HistoryLog> GetEntityHistory(int EntityID)
+        {
+            if (!IsHistoryServiceInitiazlied)
+            {
+                throw new Exception(string.Format("{0} : History service is not yet initialized.", Reflection.GetCurrentMethodName()));
+            }
+
+            List<HistoryLog> entityHistoryLog = new List<HistoryLog>();
+
+            if (EntityID != 0)
+            {
+                try
+                {
+                    entityHistoryLog = HistoryServiceDBHelper.GetEntityHistory(EntityID, ConnectionString).MapTable();
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+
+            return entityHistoryLog;
+        }
+
+        public List<EntityPropertyChange> GetEntityDetailedHistory(int HistoryLogID)
+        {
+            return null;
+        }
     }
 }

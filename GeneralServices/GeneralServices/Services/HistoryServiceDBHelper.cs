@@ -9,6 +9,37 @@ namespace GeneralServices.Services
 {
     internal static class HistoryServiceDBHelper
     {
+        private static DataTable prepareDataTable(List<EntityPropertyChange> Changes)
+        {
+            DataTable dtChanges = new DataTable();
+            DataRow dtRow;
+
+            dtChanges.Columns.Add("HistoryLogID", typeof(int));
+            dtChanges.Columns.Add("EntityPropertyID", typeof(int));
+            dtChanges.Columns.Add("CurrentValueAsText", typeof(string));
+            dtChanges.Columns.Add("OriginalValueAsText", typeof(string));
+            dtChanges.Columns.Add("Date", typeof(DateTime));
+            dtChanges.Columns.Add("HashID", typeof(int));
+
+            if (Changes != null && Changes.Count > 0)
+            {
+                foreach (var change in Changes)
+                {
+                    dtRow = dtChanges.NewRow();
+                    dtRow["HistoryLogID"] = change.HistoryLogID;
+                    dtRow["EntityPropertyID"] = change.EntityPropertyID;
+                    dtRow["CurrentValueAsText"] = change.CurrentValueAsText;
+                    dtRow["OriginalValueAsText"] = change.OriginalValueAsText;
+                    dtRow["Date"] = change.Date;
+                    dtRow["HashID"] = change.HashID;
+
+                    dtChanges.Rows.Add(dtRow);
+                }
+            }
+
+            return dtChanges;
+        }
+
         internal static void createHistoryLogTable(string ConnectionString)
         {
             if (string.IsNullOrEmpty(ConnectionString))
@@ -382,35 +413,43 @@ namespace GeneralServices.Services
             }
         }
 
-        private static DataTable prepareDataTable(List<EntityPropertyChange> Changes)
+        internal static DataTable GetEntityHistory(int EntityID, string ConnectionString)
         {
-            DataTable dtChanges = new DataTable();
-            DataRow dtRow;
+            DataTable entityHistoryLog = new DataTable();
 
-            dtChanges.Columns.Add("HistoryLogID", typeof(int));
-            dtChanges.Columns.Add("EntityPropertyID", typeof(int));
-            dtChanges.Columns.Add("CurrentValueAsText", typeof(string));
-            dtChanges.Columns.Add("OriginalValueAsText", typeof(string));
-            dtChanges.Columns.Add("Date", typeof(DateTime));
-            dtChanges.Columns.Add("HashID", typeof(int));
-
-            if (Changes != null && Changes.Count > 0)
+            if (EntityID != 0)
             {
-                foreach (var change in Changes)
+                try
                 {
-                    dtRow = dtChanges.NewRow();
-                    dtRow["HistoryLogID"] = change.HistoryLogID;
-                    dtRow["EntityPropertyID"] = change.EntityPropertyID;
-                    dtRow["CurrentValueAsText"] = change.CurrentValueAsText;
-                    dtRow["OriginalValueAsText"] = change.OriginalValueAsText;
-                    dtRow["Date"] = change.Date;
-                    dtRow["HashID"] = change.HashID;
+                    string commandString = string.Format("SELECT * FROM {0} WHERE EntityID = {1}", Consts.SQL_TABLES_HISTORY_HISTORYLOG, EntityID);
 
-                    dtChanges.Rows.Add(dtRow);
-                } 
+                    using (SqlConnection connection = new SqlConnection(ConnectionString))
+                    {
+                        connection.Open();
+
+                        using (SqlCommand command = new SqlCommand())
+                        {
+
+                            command.Connection = connection;
+                            command.CommandText = commandString;
+
+                            using (SqlDataReader reader = command.ExecuteReader())
+                            {
+                                entityHistoryLog.Load(reader);
+                            }
+
+                        }
+
+                        connection.Close();
+                    }
+                }
+                catch (Exception sqlEx)
+                {
+                    throw sqlEx;
+                }
             }
 
-            return dtChanges;
+            return entityHistoryLog;
         }
     }
 }
