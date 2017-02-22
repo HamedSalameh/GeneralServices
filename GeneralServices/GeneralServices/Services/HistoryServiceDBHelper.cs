@@ -451,5 +451,44 @@ namespace GeneralServices.Services
 
             return entityHistoryLog;
         }
+
+        internal static DataTable GetEntityDetailedHistory(int HistoryLogID, string ConnectionString)
+        {
+            DataTable entityProperrtChangesHistoryLog = new DataTable();
+
+            if (HistoryLogID != 0)
+            {
+                try
+                {
+                    string commandString = string.Format("SELECT * FROM {0} WHERE HistoryLogID = {1}", Consts.SQL_TABLES_HISTORY_ENTITYPROPERTYCHANGES, HistoryLogID);
+
+                    using (SqlConnection connection = new SqlConnection(ConnectionString))
+                    {
+                        connection.Open();
+
+                        using (SqlCommand command = new SqlCommand())
+                        {
+
+                            command.Connection = connection;
+                            command.CommandText = commandString;
+
+                            using (SqlDataReader reader = command.ExecuteReader())
+                            {
+                                entityProperrtChangesHistoryLog.Load(reader);
+                            }
+
+                        }
+
+                        connection.Close();
+                    }
+                }
+                catch (Exception sqlEx)
+                {
+                    throw sqlEx;
+                }
+            }
+
+            return entityProperrtChangesHistoryLog;
+        }
     }
 }

@@ -3,6 +3,7 @@ using GeneralServices.Models;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
 using static GeneralServices.Enums;
 
 namespace GeneralServices.Services
@@ -128,13 +129,59 @@ namespace GeneralServices.Services
             return result;
         }
 
+        public void CreateHistoryEntry(object NewEntity, int ActionUserID, CRUDType CRUDType)
+        {
+            if (!IsHistoryServiceInitiazlied)
+            {
+                throw new Exception(string.Format("{0} : History service is not yet initialized.", Reflection.GetCurrentMethodName()));
+            }
+
+            // try detect the ID property for the object
+            try
+            {
+                Type type = NewEntity.GetType();
+                var properties = type.GetProperties();
+                if (properties != null && properties.Length > 0)
+                {
+                    var idProperty = properties.FirstOrDefault(p => p.Name.ToLower().Equals("id"));
+                    // try another combination
+                    if (idProperty == null)
+                    {
+                        idProperty = properties.FirstOrDefault(p => p.Name.ToLower().Equals(type.Name + "id"));
+                    }
+                    
+                    if (idProperty != null)
+                    {
+                        int id = 0;
+                        int.TryParse(idProperty.GetValue(NewEntity).ToString(), out id);
+                        
+                        if (id != 0)
+                        {
+                            CreateHistoryEntry(id, NewEntity, ActionUserID, CRUDType);
+                        }
+                    }
+                }
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to create history entry.\r\n{1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
+            }
+        }
+
+        /// <summary>
+        /// Creates a new entry in the history table for a domain model entity
+        /// </summary>
+        /// <param name="EntityID">The entity ID of the domain model entity</param>
+        /// <param name="NewEntity">An object holding the new entity object (after the change was comitted to DB)</param>
+        /// <param name="ActionUserID">(Optional) The user ID that executed the last change on the domain model entity</param>
+        /// <param name="CRUDType">Lookup defining the change type (CREATE, UPDAT or DELETE)</param>
         public void CreateHistoryEntry(int EntityID, object NewEntity, int ActionUserID, CRUDType CRUDType)
         {
             if (!IsHistoryServiceInitiazlied)
             {
                 throw new Exception(string.Format("{0} : History service is not yet initialized.", Reflection.GetCurrentMethodName()));
             }
-            
+
             if (EntityID != 0 && NewEntity != null)
             {
                 CreateHistoryEntry(EntityID, null, NewEntity, ActionUserID, CRUDType);
@@ -207,11 +254,11 @@ namespace GeneralServices.Services
             {
                 try
                 {
-                    entityHistoryLog = HistoryServiceDBHelper.GetEntityHistory(EntityID, ConnectionString).MapTable();
+                    entityHistoryLog = HistoryServiceDBHelper.GetEntityHistory(EntityID, ConnectionString).MapEntityHistoryTable();
                 }
-                catch (Exception)
+                catch (Exception Ex)
                 {
-                    throw;
+                    throw new Exception(string.Format("{0} : Unable to get entity change history.\r\n{1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
                 }
             }
 
@@ -220,7 +267,26 @@ namespace GeneralServices.Services
 
         public List<EntityPropertyChange> GetEntityDetailedHistory(int HistoryLogID)
         {
-            return null;
+            List<EntityPropertyChange> entityPropertyChanges = null;
+
+            if (!IsHistoryServiceInitiazlied)
+            {
+                throw new Exception(string.Format("{0} : History service is not yet initialized.", Reflection.GetCurrentMethodName()));
+            }
+
+            if (HistoryLogID != 0)
+            {
+                try
+                {
+                    entityPropertyChanges = HistoryServiceDBHelper.GetEntityDetailedHistory(HistoryLogID, ConnectionString).MapPropertyChangeTable();
+                }
+                catch (Exception Ex)
+                {
+                    throw new Exception(string.Format("{0} : Unable to get entity property changes history.\r\n{1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
+                }
+            }
+
+            return entityPropertyChanges;
         }
     }
 }

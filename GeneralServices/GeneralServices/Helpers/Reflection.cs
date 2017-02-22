@@ -172,6 +172,11 @@ namespace GeneralServices.Helpers
 
         public static List<KeyValuePair<int, object>> GetObjectPropertiesAndValues(dynamic Object)
         {
+            if (Object == null)
+            {
+                throw new Exception("{0} : Passed object must not be null.");
+            }
+
             Type type = Object.GetType();
             List<KeyValuePair<int, object>> properties = new List<KeyValuePair<int, object>>();
 

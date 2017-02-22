@@ -43,41 +43,41 @@ namespace GeneralServices.Models
 
     public static class HistoryLogExtentions
     {
-        public static HistoryLog MapRecord(this DataRow Row)
+        public static HistoryLog MapHistoryRecord(this DataRow Row)
         {
             HistoryLog entry = null;
-            int _eID = -1,_actionUserID = -1, _eOwnerID = -1, etl = 0, _hashID = 0, _hID = 0;
+            int _entityID = -1,_actionUserID = -1, _entityOwnerID = -1, entityTypeLookup = 0, _hashID = 0, _historyLogID = 0;
             CRUDType _crudType;
 
             if (Row != null)
             {
                 DateTime _date = DateTime.Today;
-                int.TryParse(Row["EntityID"].ToString(), out _eID);
+                int.TryParse(Row["EntityID"].ToString(), out _entityID);
 
-                if (_eID != -1)
+                if (_entityID != -1)
                 {
                     entry = new HistoryLog();
-                    entry.EntityID = _eID;
+                    entry.EntityID = _entityID;
                     DateTime.TryParse(Row["Date"].ToString(), out _date);
 
-                    int.TryParse(Row["EntityTypeLookup"].ToString(), out etl);
-                    int.TryParse(Row["EntityOwnerID"].ToString(), out _eOwnerID);
+                    int.TryParse(Row["EntityTypeLookup"].ToString(), out entityTypeLookup);
+                    int.TryParse(Row["EntityOwnerID"].ToString(), out _entityOwnerID);
                     Enum.TryParse(Row["CRUDType"].ToString(), out _crudType);
                     int.TryParse(Row["ActionUserID"].ToString(), out _actionUserID);
                     int.TryParse(Row["HashID"].ToString(), out _hashID);
-                    int.TryParse(Row["HistoryLogID"].ToString(), out _hID);
+                    int.TryParse(Row["HistoryLogID"].ToString(), out _historyLogID);
 
-                    entry.EntityTypeID = etl;
-                    entry.EntityOwnerID = _eOwnerID;
+                    entry.EntityTypeID = entityTypeLookup;
+                    entry.EntityOwnerID = _entityOwnerID;
                     entry.CRUDType = _crudType;
                     entry.Date = _date;
-                    entry.HistoryLogID = _hID;
+                    entry.HistoryLogID = _historyLogID;
                 }
             }
             return entry;
         }
 
-        public static List<HistoryLog> MapTable(this DataTable Table)
+        public static List<HistoryLog> MapEntityHistoryTable(this DataTable Table)
         {
             List<HistoryLog> historyLog = new List<HistoryLog>();
 
@@ -85,7 +85,7 @@ namespace GeneralServices.Models
             {
                 foreach(DataRow row in Table.Rows)
                 {
-                    HistoryLog entry = row.MapRecord();
+                    HistoryLog entry = row.MapHistoryRecord();
                     if (entry != null)
                     {
                         historyLog.Add(entry);
