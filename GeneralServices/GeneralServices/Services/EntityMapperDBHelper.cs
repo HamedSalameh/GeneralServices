@@ -5,7 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using static GeneralServices.Enums;
 
-namespace GeneralServices.Components
+namespace GeneralServices.Services
 {
     internal static class EntityMapperDBHelper
     {

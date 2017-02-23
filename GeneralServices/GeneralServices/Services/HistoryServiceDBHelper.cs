@@ -329,6 +329,10 @@ namespace GeneralServices.Services
         /// <returns>NEw history log ID</returns>
         internal static int AddEntityHistoryEntry(HistoryLog EntityEntry, string ConnectionString)
         {
+            if (string.IsNullOrEmpty(ConnectionString))
+            {
+                throw new Exception("{0} : Connection string must not be empty");
+            }
             int HistoryLogID = Consts.INVALID_INDEX;
 
             try
@@ -377,8 +381,16 @@ namespace GeneralServices.Services
             return HistoryLogID;
         }
 
+        /// <summary>
+        /// Inserts all entity property changes to database
+        /// </summary>
+        /// <param name="Changes">List of entity property changes</param>
         internal static void AddEntityPropertyChangesHistoryLogs(List<EntityPropertyChange> Changes, string ConnectionString)
         {
+            if(string.IsNullOrEmpty(ConnectionString))
+            {
+                throw new Exception("{0} : Connection string must not be empty");
+            }
             // try to save entity propery changes
             if (Changes != null && Changes.Count > 0)
             {

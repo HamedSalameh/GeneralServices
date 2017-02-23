@@ -53,8 +53,8 @@
   <ItemGroup>
     <Compile Include="Attributes\IgnoreChanges.cs" />
     <Compile Include="BaseResult.cs" />
-    <Compile Include="Components\EntityMapper.cs" />
-    <Compile Include="Components\EntityMapperDBHelper.cs" />
+    <Compile Include="Services\EntityMapper.cs" />
+    <Compile Include="Services\EntityMapperDBHelper.cs" />
     <Compile Include="Components\GenericRepositoryBase.cs" />
     <Compile Include="Consts.cs" />
     <Compile Include="Enums.cs" />
@@ -73,14 +73,11 @@
     <Compile Include="Services\HistoryServiceDBHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\tsql_CreateTable_EntityPropertyLookup.sql" />
-    <Content Include="Resources\tsql_CreateTable_EntityTypeLookup.sql" />
-    <Content Include="Resources\tsql_CreateUDT_UDT_DomainMapperHelper_EntityProperties.sql" />
-    <Content Include="Resources\tsql_CreateUSP_USP_DomainMapperHelper_InsertIntoEntityPropertyLookupTable.sql" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

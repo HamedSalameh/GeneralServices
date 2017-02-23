@@ -2,7 +2,6 @@
 using GeneralServices.Models;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Linq;
 using static GeneralServices.Enums;
 
@@ -105,19 +104,26 @@ namespace GeneralServices.Services
 
             if (IsHistoryServiceInitiazlied == false)
             {
-                HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
-                result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
-                // if main history table exists, check the entity property changes table
-                if (result)
+                try
                 {
-                    HistoryServiceDBHelper.createEntityPropertyChangesTable(ConnectionString);
-                    result = HistoryServiceDBHelper.validateEntityPropertyChangesTable(ConnectionString);
-                }
+                    HistoryServiceDBHelper.createHistoryLogTable(ConnectionString);
+                    result = HistoryServiceDBHelper.validateHistoryLogTable(ConnectionString);
+                    // if main history table exists, check the entity property changes table
+                    if (result)
+                    {
+                        HistoryServiceDBHelper.createEntityPropertyChangesTable(ConnectionString);
+                        result = HistoryServiceDBHelper.validateEntityPropertyChangesTable(ConnectionString);
+                    }
 
-                if (result)
+                    if (result)
+                    {
+                        HistoryServiceDBHelper.createUDT_EntityPropertChangesTable(ConnectionString);
+                        HistoryServiceDBHelper.createUSP_InsertEntityPropertyChanges(ConnectionString);
+                    }
+                }
+                catch (Exception Ex)
                 {
-                    HistoryServiceDBHelper.createUDT_EntityPropertChangesTable(ConnectionString);
-                    HistoryServiceDBHelper.createUSP_InsertEntityPropertyChanges(ConnectionString);
+                    throw new Exception(string.Format("{0} : Unable to initialize HistorySerivce.{1}", Reflection.GetCurrentMethodName(), Environment.NewLine + Ex.Message), Ex);
                 }
                 // Init history logs tables, stored procedures and user defined types
                 if (result)
@@ -137,35 +143,29 @@ namespace GeneralServices.Services
             }
 
             // try detect the ID property for the object
-            try
+            Type type = NewEntity.GetType();
+            var properties = type.GetProperties();
+            if (properties != null && properties.Length > 0)
             {
-                Type type = NewEntity.GetType();
-                var properties = type.GetProperties();
-                if (properties != null && properties.Length > 0)
+                var idProperty = properties.FirstOrDefault(p => p.Name.ToLower().Equals("id"));
+                // try another combination
+                if (idProperty == null)
                 {
-                    var idProperty = properties.FirstOrDefault(p => p.Name.ToLower().Equals("id"));
-                    // try another combination
-                    if (idProperty == null)
+                    idProperty = properties.FirstOrDefault(p => p.Name.ToLower().Equals(type.Name + "id"));
+                }
+
+                if (idProperty != null)
+                {
+                    int id = 0;
+                    int.TryParse(idProperty.GetValue(NewEntity).ToString(), out id);
+
+                    if (id != 0)
                     {
-                        idProperty = properties.FirstOrDefault(p => p.Name.ToLower().Equals(type.Name + "id"));
-                    }
-                    
-                    if (idProperty != null)
-                    {
-                        int id = 0;
-                        int.TryParse(idProperty.GetValue(NewEntity).ToString(), out id);
-                        
-                        if (id != 0)
-                        {
-                            CreateHistoryEntry(id, NewEntity, ActionUserID, CRUDType);
-                        }
+                        CreateHistoryEntry(id, NewEntity, ActionUserID, CRUDType);
                     }
                 }
             }
-            catch (Exception Ex)
-            {
-                throw new Exception(string.Format("{0} : Unable to create history entry.\r\n{1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
-            }
+
         }
 
         /// <summary>
@@ -216,9 +216,10 @@ namespace GeneralServices.Services
                     changes = Reflection.GetEntityPropertyValuesAsChanges(NewEntity);
                 }
             }
-            catch (Exception)
+            catch (Exception Ex)
             {
-                throw;
+                throw new Exception(string.Format("{0} : Unable to create history entry for entity ID {1} : {2}", Reflection.GetCurrentMethodName(),
+                    EntityID, Environment.NewLine + Ex.Message), Ex);
             }
 
             if (changes != null && changes.Count > 0)
@@ -236,7 +237,8 @@ namespace GeneralServices.Services
                 }
                 catch (Exception Ex)
                 {
-                    throw Ex;
+                    throw new Exception(string.Format("{0} : Unable to create history entry for entity ID {1} : {2}", Reflection.GetCurrentMethodName(),
+                    EntityID, Environment.NewLine + Ex.Message), Ex);
                 }
             }
         }
@@ -258,7 +260,7 @@ namespace GeneralServices.Services
                 }
                 catch (Exception Ex)
                 {
-                    throw new Exception(string.Format("{0} : Unable to get entity change history.\r\n{1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
+                    throw new Exception(string.Format("{0} : Unable to get entity change history.{1}", Reflection.GetCurrentMethodName(), Environment.NewLine + Ex.Message), Ex);
                 }
             }
 
@@ -282,7 +284,7 @@ namespace GeneralServices.Services
                 }
                 catch (Exception Ex)
                 {
-                    throw new Exception(string.Format("{0} : Unable to get entity property changes history.\r\n{1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
+                    throw new Exception(string.Format("{0} : Unable to get entity property changes history.{1}", Reflection.GetCurrentMethodName(), Environment.NewLine + Ex.Message), Ex);
                 }
             }
 

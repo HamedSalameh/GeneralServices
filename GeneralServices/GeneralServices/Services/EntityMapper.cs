@@ -7,7 +7,7 @@ using System.Data.SqlClient;
 using System.Reflection;
 using System.Linq;
 
-namespace GeneralServices.Components
+namespace GeneralServices.Services
 {
     public class EntityMapper
     {
