@@ -337,7 +337,7 @@ namespace GeneralServices.Services
             return result;
         }
 
-        internal static DataTable loadDomainEntityMapping(string connectionString)
+        internal static DataTable loadDomainEntityTypeMapping(string connectionString)
         {
             DataTable dtEntityMapping = new DataTable();
 
@@ -371,7 +371,42 @@ namespace GeneralServices.Services
 
             return dtEntityMapping;
         }
-        
+
+        internal static DataTable loadDomainEntityPropertyMapping(string connectionString)
+        {
+            DataTable dtEntityMapping = new DataTable();
+
+            string cmdString = string.Format("IF EXISTS (SELECT * FROM SYS.tables WHERE object_id = object_id('EntityTypeLookup')) " +
+                "SELECT EntityPropertyID, EntityPropertyName FROM {0}", Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE);
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand())
+                    {
+                        command.Connection = connection;
+                        command.CommandText = cmdString;
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            dtEntityMapping.Load(reader);
+                        }
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception SqlEx)
+            {
+                throw SqlEx;
+            }
+
+            return dtEntityMapping;
+        }
+
         internal static bool RemoveEntityMapping(int entityTypeID, string connectionString)
         {
             bool actionResult = false;

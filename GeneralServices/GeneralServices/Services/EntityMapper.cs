@@ -67,7 +67,7 @@ namespace GeneralServices.Services
         private Dictionary<string, int> InitializeEntityMapping(string connectionString)
         {
             Dictionary<string, int> dicDomainMapping = new Dictionary<string, int>();
-            DataTable dtDomainMapping = EntityMapperDBHelper.loadDomainEntityMapping(connectionString);
+            DataTable dtDomainMapping = EntityMapperDBHelper.loadDomainEntityTypeMapping(connectionString);
             if (dtDomainMapping == null || (dtDomainMapping.Rows != null && dtDomainMapping.Rows.Count == 0))
             {
                 // Mapping does not exist or empty
@@ -221,6 +221,23 @@ namespace GeneralServices.Services
             }
 
             return entityID;
+        }
+
+        public Dictionary<int, string> LoadDomainModelEntityMapping()
+        {
+            Dictionary<int, string> domainMapping = new Dictionary<int, string>();
+
+            try
+            {
+                DataTable dtMapping = EntityMapperDBHelper.loadDomainEntityPropertyMapping(ConnectionString);
+                domainMapping = dtMapping.AsEnumerable().ToDictionary(row => int.Parse(row[0].ToString()), row => row[1].ToString());
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to get domain entity property mapping. {1}", Reflection.GetCallingMethodName(), Ex.Message), Ex);
+            }
+
+            return domainMapping;
         }
     }
 }
