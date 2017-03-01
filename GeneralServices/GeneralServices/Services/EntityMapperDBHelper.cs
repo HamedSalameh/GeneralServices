@@ -489,5 +489,36 @@ namespace GeneralServices.Services
 
             return entityID;
         }
+
+        internal static string GetEntityPropertyNameByID(int PropertyID, string connectionString)
+        {
+            string entityPropertyName = "";
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand())
+                    {
+                        command.Connection = connection;
+                        command.CommandText = string.Format("SELECT EntityPropertyName FROM {0} WHERE EntityPropertyID = @entityPropertyID", Consts.SQL_TABLES_ENTITY_PROPERTY_LOOKUP_TABLE);
+
+                        command.Parameters.AddWithValue("@entityPropertyID", PropertyID);
+
+                        entityPropertyName = (string)command.ExecuteScalar();
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to get domain entity property name by ID. {1}", Reflection.GetCurrentMethodName(), Ex.Message), Ex);
+            }
+
+            return entityPropertyName;
+        }
     }
 }

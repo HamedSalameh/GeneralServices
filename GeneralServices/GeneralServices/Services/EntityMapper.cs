@@ -61,9 +61,10 @@ namespace GeneralServices.Services
                 }
                 return _instance;
             }
-        } 
+        }
         #endregion
 
+        #region Private Methods
         private Dictionary<string, int> InitializeEntityMapping(string connectionString)
         {
             Dictionary<string, int> dicDomainMapping = new Dictionary<string, int>();
@@ -139,7 +140,8 @@ namespace GeneralServices.Services
                 throw sqlEx;
             }
 
-        }
+        } 
+        #endregion
 
         /// <summary>
         /// Scans an assembly for any class types, then generates a mapping in a given database for all the assembly classes
@@ -238,6 +240,22 @@ namespace GeneralServices.Services
             }
 
             return domainMapping;
+        }
+
+        public string GetEntityPropertyNameByID(int PropertyID)
+        {
+            string name = string.Empty;
+
+            try
+            {
+                name = EntityMapperDBHelper.GetEntityPropertyNameByID(PropertyID, ConnectionString);
+            }
+            catch (Exception Ex)
+            {
+                throw new Exception(string.Format("{0} : Unable to get domain entity property name by ID. {1}", Reflection.GetCallingMethodName(), Ex.Message), Ex);
+            }
+
+            return name;
         }
     }
 }
