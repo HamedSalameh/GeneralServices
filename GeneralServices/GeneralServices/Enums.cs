@@ -24,7 +24,7 @@
             Validation
         }
 
-        public enum ResponseStatus
+        public enum ResultStatus
         {
             Unknown,
             Success,
