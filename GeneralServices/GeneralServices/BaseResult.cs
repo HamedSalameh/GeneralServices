@@ -34,11 +34,18 @@ namespace GeneralServices
     public class OperationResult : BaseResult
     {
         public string OperationName { get; set; }
+
         public OperationResult() : this(ResultStatus.Unknown, string.Empty)
         {
         }
+
         public OperationResult(string OperationName) : this(ResultStatus.Unknown, OperationName)
         {
+        }
+
+        public OperationResult(ResultStatus OperationStatus) : this(OperationStatus, string.Empty)
+        {
+
         }
 
         public OperationResult(ResultStatus OperationStatus, string OperationName)
