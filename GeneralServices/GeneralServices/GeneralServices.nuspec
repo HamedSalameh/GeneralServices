@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>HamedSalameh.GSL</id>
+    <version>1.0</version>
+    <title>General Service Libraries</title>
+    <authors>Hamed Salameh</authors>
+    <owners>Hamed Salameh</owners>
+    <projectUrl>https://github.com/HamedSalameh/ServiceLibraries.General</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A reusable, general, multi-purpose service library containing various helpers such as DomainMapper, HistoryService, Reflection service and more</description>
+    <copyright>Copyright 2018</copyright>
+    <tags></tags>
+  </metadata>
+</package>
