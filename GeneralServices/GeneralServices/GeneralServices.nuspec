@@ -2,8 +2,8 @@
 <package >
   <metadata>
     <id>HamedSalameh.GSL</id>
-    <version>1.0</version>
-    <title>General Service Libraries</title>
+    <version>1.0.1</version>
+    <title>General Services Library</title>
     <authors>Hamed Salameh</authors>
     <owners>Hamed Salameh</owners>
     <projectUrl>https://github.com/HamedSalameh/ServiceLibraries.General</projectUrl>

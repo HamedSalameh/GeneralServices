@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("HamedSalameh.Libraries.GeneralServices")]
+[assembly: AssemblyTitle("General Services Library")]
 [assembly: AssemblyDescription("A reusable, general, multi-purpose service library containing various helpers such as DomainMapper, HistoryService, Reflection service and more")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Hamed Salameh")]
-[assembly: AssemblyProduct("GeneralServices")]
+[assembly: AssemblyProduct("General Services Library")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
